@@ -32,18 +32,23 @@ export async function saveReport(report: any) {
   try {
     const { data, error } = await supabase
       .from('reportes_diarios')
-      .insert([
+      .upsert([
         {
           report_date: report.header.date,
           data: report,
           status_level: report.epidemiology.status_level
         }
-      ])
+      ], { onConflict: 'report_date' })
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error saving report to Supabase:', error);
+      savePendingReport(report);
+      return { error };
+    }
     return data;
   } catch (err) {
+    console.error('Exception saving report to Supabase:', err);
     // If it's a network error, save locally
     if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('Network'))) {
       console.warn('Network Error: Guardando reporte localmente.');
@@ -63,6 +68,7 @@ export async function savePatient(patient: PatientEntry) {
   }
 
   try {
+    // Ensure ID is a valid string for the database
     const { data, error } = await supabase
       .from('pacientes')
       .upsert([
@@ -71,12 +77,17 @@ export async function savePatient(patient: PatientEntry) {
           patient_date: patient.date,
           data: patient
         }
-      ])
+      ], { onConflict: 'id' })
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error saving patient to Supabase:', error);
+      savePendingPatient(patient);
+      return { error };
+    }
     return data;
   } catch (err) {
+    console.error('Exception saving patient to Supabase:', err);
     if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('Network'))) {
       savePendingPatient(patient);
       return { offline: true };
@@ -95,14 +106,26 @@ export async function syncPendingData() {
 
   // Sync Patients first
   const pendingPatients = getPendingPatients();
-  for (const item of pendingPatients) {
-    try {
-      const { error } = await supabase
-        .from('pacientes')
-        .upsert([{ id: item.id, patient_date: item.patient.date, data: item.patient }]);
-      if (!error) removePendingPatient(item.id);
-    } catch (err) {
-      console.error('Error syncing patient:', err);
+  if (pendingPatients.length > 0) {
+    console.log(`Sincronizando ${pendingPatients.length} pacientes pendientes...`);
+    for (const item of pendingPatients) {
+      try {
+        const { error } = await supabase
+          .from('pacientes')
+          .upsert([{ 
+            id: item.id, 
+            patient_date: item.patient.date, 
+            data: item.patient 
+          }], { onConflict: 'id' });
+        
+        if (!error) {
+          removePendingPatient(item.id);
+        } else {
+          console.error(`Error sincronizando paciente ${item.id}:`, error);
+        }
+      } catch (err) {
+        console.error(`Excepción sincronizando paciente ${item.id}:`, err);
+      }
     }
   }
 
@@ -116,13 +139,13 @@ export async function syncPendingData() {
     try {
       const { error } = await supabase
         .from('reportes_diarios')
-        .insert([
+        .upsert([
           {
             report_date: item.report.header.date,
             data: item.report,
             status_level: item.report.epidemiology.status_level
           }
-        ]);
+        ], { onConflict: 'report_date' });
 
       if (!error) {
         removePendingReport(item.id);
@@ -131,7 +154,7 @@ export async function syncPendingData() {
         console.error(`Error sincronizando reporte ${item.id}:`, error);
       }
     } catch (err) {
-      console.error(`Error sincronizando reporte ${item.id}:`, err);
+      console.error(`Excepción sincronizando reporte ${item.id}:`, err);
       break; // Stop if there's a network error during sync
     }
   }

@@ -177,23 +177,33 @@ function App() {
   const [selectedReport, setSelectedReport] = useState<HealthReport | null>(null);
 
   const handleCloseDay = async () => {
+    if (patients.length === 0) {
+      alert('No hay pacientes registrados para cerrar el día.');
+      setShowCloseDayModal(false);
+      return;
+    }
+
     setClosingDay(true);
     try {
+      console.log(`Iniciando cierre de día con ${patients.length} pacientes.`);
       const report = patientsToReport(patients, staff);
       
       // 1. Save to Supabase
       try {
         const result = await saveReport(report);
+        console.log('Reporte guardado en Supabase:', result);
         if (result && (result as any).offline) {
           alert('MODO OFFLINE: El reporte de cierre se guardó localmente y se sincronizará al recuperar internet.');
         }
       } catch (err) {
         console.error('Error saving to Supabase:', err);
+        alert('Error al guardar en la base de datos, pero el proceso continuará localmente.');
       }
 
       // 2. Send to Apps Script
       const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
       if (appsScriptUrl) {
+        console.log('Enviando reporte a Google Sheets...');
         try {
           await fetch(appsScriptUrl, {
             method: 'POST',
@@ -207,17 +217,27 @@ function App() {
       }
 
       // 3. Export to Excel
+      console.log('Generando archivo Excel...');
       exportToExcel(patients, report);
 
       setLastGeneratedReport(report);
-      setReports([report, ...reports]);
-      setPatients([]); // Clear patients for next day
+      
+      // Update local reports list immediately
+      setReports(prev => [report, ...prev]);
+      
+      // Clear patients for next day
+      setPatients([]); 
       localStorage.removeItem('health_app_patients');
+      
       setShowCloseDayModal(false);
       setShowWhatsAppOptions(true);
+      
+      // Refresh reports from server to be sure
+      setTimeout(() => loadReports(), 2000);
+      
     } catch (err) {
       console.error('Error closing day:', err);
-      alert('Error al generar el reporte de cierre.');
+      alert('Error crítico al generar el reporte de cierre.');
     } finally {
       setClosingDay(false);
     }

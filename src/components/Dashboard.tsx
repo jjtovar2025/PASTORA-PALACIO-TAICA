@@ -48,12 +48,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
   const aggregatedData = useMemo(() => {
     if (filteredReports.length === 0) return null;
 
+    // Deep clone the first report to use as a base
     const initial: HealthReport = JSON.parse(JSON.stringify(filteredReports[0]));
     
+    // Ensure all required sections exist in initial
+    if (!initial.stats) initial.stats = { total_patients: 0, female: 0, male: 0, med_general: 0, emergencia: 0, pediatria: 0, geriatria: 0, med_interna: 0, ginecologia: 0, prenatal: 0 };
+    if (!initial.activities) initial.activities = { ta_control: 0, glicemia: 0, peso: 0, talla: 0, tto_ev: 0, tto_im: 0, tto_sl: 0, tto_vo: 0, tto_sc: 0, tto_protocolo: 0, nebulizaciones: 0, curas: 0, suturas: 0, retiro_puntos: 0, sondas: 0, lavado_ocular: 0, lavado_nasal: 0, lavado_oidos: 0, electros: 0, visitas_domiciliares: 0, jornadas_especiales: 0, entregas_ayudas: 0, vacunas_rutina: 0 };
+    if (!initial.age_groups) initial.age_groups = { lactante_0_2: 0, preescolar_3_5: 0, escolar_6_11: 0, adolescente_12_17: 0, adulto_joven_18_29: 0, adulto_30_59: 0, adulto_mayor_60: 0 };
+    if (!initial.epidemiology) initial.epidemiology = { cardiovascular: 0, diabetes: 0, asma: 0, ira: 0, embarazada: 0, covid_19: 0, fiebre: 0, dengue: 0, zika: 0, chicungunya: 0, varicela: 0, rubeola: 0, sarampion: 0, h1n1: 0, mordeduras_canina: 0, diarreas: 0, amigdalitis: 0, hipertension: 0, otros: 0, status_level: 'STABLE' };
+
     // If more than one report, aggregate numeric values
     if (filteredReports.length > 1) {
       // Reset numeric values to 0 before summing
       const resetNumeric = (obj: any) => {
+        if (!obj) return;
         for (const key in obj) {
           if (typeof obj[key] === 'number') obj[key] = 0;
           else if (typeof obj[key] === 'object' && obj[key] !== null) resetNumeric(obj[key]);
@@ -66,6 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
 
       filteredReports.forEach(report => {
         const sumNumeric = (target: any, source: any) => {
+          if (!source) return;
           for (const key in source) {
             if (typeof source[key] === 'number') {
               target[key] = (target[key] || 0) + source[key];
@@ -82,10 +91,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
       });
 
       // For aggregated reports, status level should be the most critical one found
-      const levels = ['NORMAL', 'WARNING', 'CRITICAL'];
+      const levels = ['NORMAL', 'STABLE', 'WARNING', 'CRITICAL'];
       let maxLevel = 0;
       filteredReports.forEach(r => {
-        const idx = levels.indexOf(r.epidemiology.status_level);
+        const idx = levels.indexOf(r.epidemiology?.status_level || 'STABLE');
         if (idx > maxLevel) maxLevel = idx;
       });
       initial.epidemiology.status_level = levels[maxLevel] as any;
@@ -123,11 +132,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
   const specData = useMemo(() => {
     const specs: { [key: string]: number } = {};
     filteredReports.forEach(r => {
-      if (r.patients) {
+      // Try to get from patients array if available
+      if (r.patients && r.patients.length > 0) {
         r.patients.forEach(p => {
           const s = p.specialty || 'General';
           specs[s] = (specs[s] || 0) + 1;
         });
+      } else if (r.stats) {
+        // Fallback to stats if patients array is missing (common in manual reports)
+        if (r.stats.med_general) specs['Medicina General'] = (specs['Medicina General'] || 0) + r.stats.med_general;
+        if (r.stats.emergencia) specs['Emergencia'] = (specs['Emergencia'] || 0) + r.stats.emergencia;
+        if (r.stats.pediatria) specs['Pediatría'] = (specs['Pediatría'] || 0) + r.stats.pediatria;
+        if (r.stats.geriatria) specs['Geriatría'] = (specs['Geriatría'] || 0) + r.stats.geriatria;
+        if (r.stats.med_interna) specs['Medicina Interna'] = (specs['Medicina Interna'] || 0) + r.stats.med_interna;
+        if (r.stats.ginecologia) specs['Ginecología'] = (specs['Ginecología'] || 0) + r.stats.ginecologia;
+        if (r.stats.prenatal) specs['Prenatal'] = (specs['Prenatal'] || 0) + r.stats.prenatal;
       }
     });
     return Object.entries(specs).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
