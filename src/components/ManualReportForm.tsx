@@ -5,11 +5,14 @@ import { Loader2, Send, MessageSquare, Save, User, Activity, Users, ShieldAlert,
 
 interface ManualReportFormProps {
   onSuccess: (report: HealthReport) => void;
+  phoneNumbers: string[];
 }
 
-export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess }) => {
+export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, phoneNumbers }) => {
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('header');
+  const [showWhatsAppOptions, setShowWhatsAppOptions] = useState(false);
+  const [lastReport, setLastReport] = useState<HealthReport | null>(null);
   
   const [formData, setFormData] = useState<Partial<HealthReport>>({
     header: {
@@ -226,9 +229,9 @@ Especialista: ${data.header.doctor_specialist}`;
         });
       }
 
-      // 3. Open WhatsApp
-      const encodedText = encodeURIComponent(finalReport.whatsapp_summary);
-      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+      // 3. Prepare for WhatsApp
+      setLastReport(finalReport);
+      setShowWhatsAppOptions(true);
 
       onSuccess(finalReport);
     } catch (err) {
@@ -386,23 +389,64 @@ Especialista: ${data.header.doctor_specialist}`;
       )}
 
       <div className="pt-6">
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-4 px-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-200 text-lg"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="animate-spin w-6 h-6" />
-              Guardando Reporte...
-            </>
-          ) : (
-            <>
-              <MessageSquare className="w-6 h-6" />
-              Finalizar y Enviar WhatsApp
-            </>
-          )}
-        </button>
+        {showWhatsAppOptions && lastReport ? (
+          <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl animate-in zoom-in-95 duration-300">
+            <h3 className="text-emerald-900 font-black text-center mb-4 uppercase tracking-widest text-sm">¡Reporte Guardado! Enviar a:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {phoneNumbers.map((phone, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const encodedText = encodeURIComponent(lastReport.whatsapp_summary);
+                    const cleanPhone = phone.replace(/\D/g, '');
+                    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
+                  }}
+                  className="flex items-center justify-center gap-3 bg-emerald-600 text-white py-4 px-6 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  {phone}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const encodedText = encodeURIComponent(lastReport.whatsapp_summary);
+                  window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+                }}
+                className="flex items-center justify-center gap-3 bg-slate-600 text-white py-4 px-6 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-lg shadow-slate-200"
+              >
+                <Send className="w-5 h-5" />
+                OTRO CONTACTO
+              </button>
+            </div>
+            <button 
+              type="button"
+              onClick={() => setShowWhatsAppOptions(false)}
+              className="w-full mt-4 text-emerald-600 font-bold text-xs uppercase tracking-widest hover:underline"
+            >
+              Cerrar
+            </button>
+          </div>
+        ) : (
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 px-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-200 text-lg"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin w-6 h-6" />
+                Guardando Reporte...
+              </>
+            ) : (
+              <>
+                <MessageSquare className="w-6 h-6" />
+                Finalizar y Enviar WhatsApp
+              </>
+            )}
+          </button>
+        )}
         <p className="text-center text-xs text-gray-400 mt-3">
           Se guardará en Supabase, Excel y se abrirá WhatsApp automáticamente.
         </p>

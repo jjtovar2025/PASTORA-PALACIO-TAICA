@@ -27,6 +27,15 @@ function App() {
   const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [phoneNumbers, setPhoneNumbers] = useState<string[]>(() => {
+    const saved = localStorage.getItem('health_app_phones');
+    return saved ? JSON.parse(saved) : ['+584241208234'];
+  });
+  const [newPhone, setNewPhone] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('health_app_phones', JSON.stringify(phoneNumbers));
+  }, [phoneNumbers]);
 
   useEffect(() => {
     loadReports();
@@ -164,6 +173,43 @@ function App() {
                 </div>
               </div>
 
+              <div className="mt-8 pt-8 border-t border-slate-100">
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Contactos de WhatsApp (Enfermería)</h3>
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {phoneNumbers.map((phone, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-2xl font-bold text-sm border border-blue-100">
+                      <span>{phone}</span>
+                      <button 
+                        onClick={() => setPhoneNumbers(phoneNumbers.filter((_, i) => i !== idx))}
+                        className="text-blue-400 hover:text-red-500 transition-colors"
+                      >
+                        <PlusCircle className="w-4 h-4 rotate-45" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 max-w-md">
+                  <input 
+                    type="text" 
+                    placeholder="Ej: +584241208234"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    className="flex-1 bg-slate-50 border border-slate-200 px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                  />
+                  <button 
+                    onClick={() => {
+                      if (newPhone.trim()) {
+                        setPhoneNumbers([...phoneNumbers, newPhone.trim()]);
+                        setNewPhone('');
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+
               {!isConfigured && (
                 <div className="mt-8 p-4 bg-slate-100 rounded-2xl">
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -256,9 +302,9 @@ function App() {
                     </div>
 
                     {entryMode === 'manual' ? (
-                      <ManualReportForm onSuccess={handleReportSuccess} />
+                      <ManualReportForm onSuccess={handleReportSuccess} phoneNumbers={phoneNumbers} />
                     ) : (
-                      <ReportForm onSuccess={handleReportSuccess} />
+                      <ReportForm onSuccess={handleReportSuccess} phoneNumbers={phoneNumbers} />
                     )}
                   </div>
                 )}
@@ -314,16 +360,36 @@ function App() {
                                     </span>
                                   </td>
                                   <td className="px-6 py-4">
-                                    <button
-                                      onClick={() => {
-                                        const encodedText = encodeURIComponent(report.whatsapp_summary);
-                                        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-                                      }}
-                                      className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-xl font-bold text-xs hover:bg-green-600 hover:text-white transition-all"
-                                    >
-                                      <MessageSquare className="w-3.5 h-3.5" />
-                                      REENVIAR
-                                    </button>
+                                    <div className="flex flex-wrap gap-2">
+                                      {phoneNumbers.length > 0 ? (
+                                        phoneNumbers.map((phone, pIdx) => (
+                                          <button
+                                            key={pIdx}
+                                            onClick={() => {
+                                              const encodedText = encodeURIComponent(report.whatsapp_summary);
+                                              const cleanPhone = phone.replace(/\D/g, '');
+                                              window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
+                                            }}
+                                            className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl font-bold text-[10px] hover:bg-emerald-600 hover:text-white transition-all"
+                                            title={`Enviar a ${phone}`}
+                                          >
+                                            <MessageSquare className="w-3 h-3" />
+                                            {phoneNumbers.length === 1 ? 'REENVIAR' : phone.slice(-4)}
+                                          </button>
+                                        ))
+                                      ) : (
+                                        <button
+                                          onClick={() => {
+                                            const encodedText = encodeURIComponent(report.whatsapp_summary);
+                                            window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+                                          }}
+                                          className="flex items-center gap-2 bg-slate-50 text-slate-400 px-3 py-1.5 rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
+                                        >
+                                          <MessageSquare className="w-3 h-3" />
+                                          COMPARTIR
+                                        </button>
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
                               ))
