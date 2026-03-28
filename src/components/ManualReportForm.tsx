@@ -50,10 +50,6 @@ const InputField = React.memo(({ label, section, field, formData, handleInputCha
         onChange={(e) => {
           let val: any = e.target.value;
           if (type === "number") {
-            // Allow empty string while typing, but convert to number for state if it's a valid number
-            // Actually, keeping it as string in state might be safer for focus, 
-            // but the rest of the app expects numbers.
-            // Let's just filter non-numeric chars if it's supposed to be a number
             val = val.replace(/[^0-9]/g, '');
             handleInputChange(section, field, parseInt(val) || 0);
           } else {
@@ -170,7 +166,7 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
     }
   }, [formData.stats]);
 
-  const handleInputChange = (section: string, field: string, value: any) => {
+  const handleInputChange = React.useCallback((section: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       [section]: {
@@ -178,7 +174,7 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
         [field]: value
       }
     }));
-  };
+  }, []);
 
   const generateWhatsAppText = (data: HealthReport) => {
     const pad = (n: number) => n.toString().padStart(2, '0');

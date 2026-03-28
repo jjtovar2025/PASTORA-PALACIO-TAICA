@@ -8,7 +8,7 @@ import { PatientEntryForm } from './components/PatientEntryForm';
 import { PatientList } from './components/PatientList';
 import { PatientEntry } from './types';
 import { patientsToReport, exportToExcel } from './lib/reportUtils';
-import { saveReport, syncPendingReports } from './lib/supabase';
+import { saveReport, syncPendingData, savePatient, getPatientsFromSupabase, deletePatientFromSupabase, supabase } from './lib/supabase';
 import { isOnline } from './lib/offline';
 import { 
   Activity, 
@@ -41,7 +41,7 @@ function App() {
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true);
-      syncPendingReports().then(() => loadReports());
+      syncPendingData().then(() => loadReports());
     };
     const handleOffline = () => setOnline(false);
 
@@ -50,7 +50,7 @@ function App() {
 
     // Initial sync check
     if (isOnline()) {
-      syncPendingReports().then(() => loadReports());
+      syncPendingData().then(() => loadReports());
     }
 
     return () => {
@@ -58,10 +58,8 @@ function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-  const [patients, setPatients] = useState<PatientEntry[]>(() => {
-    const saved = localStorage.getItem('health_app_patients');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [patients, setPatients] = useState<PatientEntry[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(false);
   const [showCloseDayModal, setShowCloseDayModal] = useState(false);
   const [closingDay, setClosingDay] = useState(false);
   const [staff, setStaff] = useState({
@@ -90,7 +88,56 @@ function App() {
 
   useEffect(() => {
     loadReports();
+    loadPatients();
   }, []);
+
+  // Real-time subscription for patients and reports
+  useEffect(() => {
+    if (!supabase) return;
+
+    const patientsChannel = supabase
+      .channel('public:pacientes')
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'pacientes' }, 
+        () => {
+          loadPatients();
+        }
+      )
+      .subscribe();
+
+    const reportsChannel = supabase
+      .channel('public:reportes_diarios')
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'reportes_diarios' }, 
+        () => {
+          loadReports();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(patientsChannel);
+      supabase.removeChannel(reportsChannel);
+    };
+  }, []);
+
+  const loadPatients = async () => {
+    try {
+      setLoadingPatients(true);
+      const today = new Date().toISOString().split('T')[0];
+      const data = await getPatientsFromSupabase(today);
+      setPatients(data);
+    } catch (err) {
+      console.error('Error loading patients:', err);
+      // Fallback to localStorage if offline and fetch fails
+      const saved = localStorage.getItem('health_app_patients');
+      if (saved) setPatients(JSON.parse(saved));
+    } finally {
+      setLoadingPatients(false);
+    }
+  };
 
   const loadReports = async () => {
     try {
@@ -106,6 +153,20 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddPatient = async (p: PatientEntry) => {
+    const newPatients = [p, ...patients];
+    setPatients(newPatients);
+    localStorage.setItem('health_app_patients', JSON.stringify(newPatients));
+    await savePatient(p);
+  };
+
+  const handleRemovePatient = async (id: string) => {
+    const newPatients = patients.filter(p => p.id !== id);
+    setPatients(newPatients);
+    localStorage.setItem('health_app_patients', JSON.stringify(newPatients));
+    await deletePatientFromSupabase(id);
   };
 
   const handleReportSuccess = (newReport: HealthReport) => {
@@ -373,6 +434,36 @@ function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
+                {activeTab === 'patients' && (
+                  <div className="space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-3xl font-black text-slate-900">Gestión de Pacientes</h2>
+                        <p className="text-slate-500 font-medium">Registro individual y cierre de jornada</p>
+                      </div>
+                      {loadingPatients && (
+                        <div className="flex items-center gap-2 text-blue-600 font-bold text-xs animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          SINCRONIZANDO...
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-1">
+                        <PatientEntryForm onAdd={handleAddPatient} />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <PatientList 
+                          patients={patients} 
+                          onRemove={handleRemovePatient}
+                          onCloseDay={() => setShowCloseDayModal(true)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === 'dashboard' && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -479,30 +570,6 @@ function App() {
                             )}
                           </tbody>
                         </table>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'patients' && (
-                  <div className="space-y-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <h2 className="text-3xl font-black text-slate-900">Gestión de Pacientes</h2>
-                        <p className="text-slate-500 font-medium">Registro individual y cierre de jornada</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-1">
-                        <PatientEntryForm onAdd={(p) => setPatients([p, ...patients])} />
-                      </div>
-                      <div className="lg:col-span-2">
-                        <PatientList 
-                          patients={patients} 
-                          onRemove={(id) => setPatients(patients.filter(p => p.id !== id))}
-                          onCloseDay={() => setShowCloseDayModal(true)}
-                        />
                       </div>
                     </div>
                   </div>

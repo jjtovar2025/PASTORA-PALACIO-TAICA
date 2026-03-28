@@ -1,5 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { savePendingReport, getPendingReports, removePendingReport, isOnline } from './offline';
+import { 
+  savePendingReport, 
+  getPendingReports, 
+  removePendingReport, 
+  isOnline,
+  savePendingPatient,
+  getPendingPatients,
+  removePendingPatient
+} from './offline';
+import { PatientEntry } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -45,9 +54,59 @@ export async function saveReport(report: any) {
   }
 }
 
-export async function syncPendingReports() {
+export async function savePatient(patient: PatientEntry) {
+  if (!supabase) return { offline: true };
+
+  if (!isOnline()) {
+    savePendingPatient(patient);
+    return { offline: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('pacientes')
+      .upsert([
+        {
+          id: patient.id,
+          patient_date: patient.date,
+          data: patient
+        }
+      ])
+      .select();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes('fetch') || err.message.includes('Network'))) {
+      savePendingPatient(patient);
+      return { offline: true };
+    }
+    throw err;
+  }
+}
+
+export async function deletePatientFromSupabase(id: string) {
+  if (!supabase || !isOnline()) return;
+  await supabase.from('pacientes').delete().eq('id', id);
+}
+
+export async function syncPendingData() {
   if (!supabase || !isOnline()) return;
 
+  // Sync Patients first
+  const pendingPatients = getPendingPatients();
+  for (const item of pendingPatients) {
+    try {
+      const { error } = await supabase
+        .from('pacientes')
+        .upsert([{ id: item.id, patient_date: item.patient.date, data: item.patient }]);
+      if (!error) removePendingPatient(item.id);
+    } catch (err) {
+      console.error('Error syncing patient:', err);
+    }
+  }
+
+  // Sync Reports
   const pending = getPendingReports();
   if (pending.length === 0) return;
 
@@ -88,4 +147,15 @@ export async function getReports() {
 
   if (error) throw error;
   return data;
+}
+
+export async function getPatientsFromSupabase(date: string) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('pacientes')
+    .select('data')
+    .eq('patient_date', date);
+  
+  if (error) throw error;
+  return data.map(d => d.data as PatientEntry);
 }

@@ -16,7 +16,7 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Morbilidad") || SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     
-    // Append row to Google Sheets
+    // Append row to Google Sheets (Summary)
     sheet.appendRow([
       data.header.date,
       data.header.day,
@@ -46,6 +46,35 @@ function doPost(e) {
       (data.epidemiology.fiebre || 0) + (data.epidemiology.dengue || 0), // Fiebre/Dengue
       (data.epidemiology.covid_19 || 0) + (data.epidemiology.varicela || 0) + (data.epidemiology.sarampion || 0) // Casos Críticos
     ]);
+
+    // Sync individual patients to "Libro de Pacientes" sheet
+    if (data.patients && data.patients.length > 0) {
+      var patientSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Libro de Pacientes");
+      if (!patientSheet) {
+        patientSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("Libro de Pacientes");
+        patientSheet.appendRow([
+          "FECHA", "HORA", "NOMBRE", "CEDULA", "EDAD", "SEXO", "PESO", "TALLA", "VITALES", "MOTIVO", "ESPECIALIDAD", "DIAGNOSTICO", "TRATAMIENTO"
+        ]);
+      }
+      
+      data.patients.forEach(function(p) {
+        patientSheet.appendRow([
+          p.date,
+          p.entryTime,
+          p.name,
+          p.idNumber,
+          p.age,
+          p.gender,
+          p.weight,
+          p.height,
+          "FC:" + p.heartRate + " SpO2:" + p.spo2 + "% T:" + p.temperature + " PA:" + p.bloodPressure,
+          p.reason,
+          p.specialty,
+          p.diagnosis,
+          p.treatmentGiven
+        ]);
+      });
+    }
     
     // Alert if CRITICAL
     if (data.epidemiology.status_level === "CRITICAL") {

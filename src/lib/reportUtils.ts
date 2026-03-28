@@ -16,6 +16,13 @@ export const patientsToReport = (patients: PatientEntry[], staff: { nurse: strin
       total_patients: patients.length,
       female: patients.filter(p => p.gender === 'F').length,
       male: patients.filter(p => p.gender === 'M').length,
+      med_general: patients.filter(p => p.specialty?.toUpperCase().includes('GENERAL')).length,
+      med_interna: patients.filter(p => p.specialty?.toUpperCase().includes('INTERNA')).length,
+      emergencia: patients.filter(p => p.specialty?.toUpperCase().includes('EMERGENCIA')).length,
+      pediatria: patients.filter(p => p.specialty?.toUpperCase().includes('PEDIATRIA')).length,
+      geriatria: patients.filter(p => p.specialty?.toUpperCase().includes('GERIATRIA')).length,
+      ginecologia: patients.filter(p => p.specialty?.toUpperCase().includes('GINECOLOGIA')).length,
+      prenatal: patients.filter(p => p.specialty?.toUpperCase().includes('PRENATAL')).length,
     },
     age_groups: {
       lactante_0_2: patients.filter(p => (parseInt(p.age) || 0) <= 2).length,
@@ -26,8 +33,30 @@ export const patientsToReport = (patients: PatientEntry[], staff: { nurse: strin
       adulto_30_59: patients.filter(p => { const a = parseInt(p.age) || 0; return a >= 30 && a <= 59; }).length,
       adulto_mayor_60: patients.filter(p => (parseInt(p.age) || 0) >= 60).length
     },
+    activities: {
+      ta_control: patients.filter(p => p.bloodPressure && p.bloodPressure !== '').length,
+      glicemia: patients.filter(p => p.glucose && p.glucose !== '').length,
+      peso: patients.filter(p => p.weight && p.weight !== '').length,
+      talla: patients.filter(p => p.height && p.height !== '').length,
+      tto_ev: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('EV')).length,
+      tto_im: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('IM')).length,
+      curas: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('CURA')).length,
+      nebulizaciones: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('NEBULIZ')).length,
+      suturas: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('SUTURA')).length,
+      retiro_puntos: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('RETIRO')).length,
+      sondas: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('SONDA')).length,
+    },
     epidemiology: {
-      status_level: 'STABLE'
+      cardiovascular: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length,
+      diabetes: patients.filter(p => p.diagnosis?.toUpperCase().includes('DIABETES')).length,
+      ira: patients.filter(p => p.diagnosis?.toUpperCase().match(/IRA|ASMA|GRIPE/)).length,
+      asma: patients.filter(p => p.diagnosis?.toUpperCase().includes('ASMA')).length,
+      fiebre: patients.filter(p => p.diagnosis?.toUpperCase().includes('FIEBRE')).length,
+      dengue: patients.filter(p => p.diagnosis?.toUpperCase().includes('DENGUE')).length,
+      covid_19: patients.filter(p => p.diagnosis?.toUpperCase().includes('COVID')).length,
+      diarreas: patients.filter(p => p.diagnosis?.toUpperCase().includes('DIARREA')).length,
+      hipertension: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length,
+      status_level: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length > 5 ? 'CRITICAL' : 'STABLE'
     },
     whatsapp_summary: ''
   };
@@ -42,14 +71,43 @@ export const patientsToReport = (patients: PatientEntry[], staff: { nurse: strin
 *1. Pacientes Atendidos: ${report.stats.total_patients}
 Femenino : ${pad(report.stats.female)}
 Masculino: ${pad(report.stats.male)}
+Medicina General: ${pad(report.stats.med_general)}
+Emergencia: ${pad(report.stats.emergencia)}
+Pediatría: ${pad(report.stats.pediatria)}
+Geriatría: ${pad(report.stats.geriatria)}
+Medicina Interna:${pad(report.stats.med_interna)}
+Ginecologia:${pad(report.stats.ginecologia)}
+Prenatal: ${pad(report.stats.prenatal)}
 
-*2-Por Grupo Etario*
+*2. Por Actividades*
+▪️Control de T/A: ${pad(report.activities?.ta_control || 0)}
+▪️Control de: glicemia:${pad(report.activities?.glicemia || 0)}
+▪️Control peso: ${pad(report.activities?.peso || 0)}
+▪️Talla: ${pad(report.activities?.talla || 0)}
+💉Tto E/V : ${pad(report.activities?.tto_ev || 0)}
+💉Tto I/M: ${pad(report.activities?.tto_im || 0)}
+▪️Nebulizaciones: ${pad(report.activities?.nebulizaciones || 0)}
+▪️Curas: ${pad(report.activities?.curas || 0)}
+➖Suturas: ${pad(report.activities?.suturas || 0)}
+--Retiro de puntos: ${pad(report.activities?.retiro_puntos || 0)}
+_Sondas: ${pad(report.activities?.sondas || 0)}
+
+*3-Por Grupo Etario*
 ➖Lactante 0 a 2 años : ${pad(report.age_groups.lactante_0_2)}
 ➖Preescolar 3 a 5 años : ${pad(report.age_groups.preescolar_3_5)}
 ➖Escolares 6 a 11 años: ${pad(report.age_groups.escolar_6_11)}
 ➖Adolescente 12 a 18: ${pad(report.age_groups.adolescente_12_17)}
 ➖Adulto 19 a 59 años: ${pad(report.age_groups.adulto_joven_18_29 + report.age_groups.adulto_30_59)}
 ➖Adulto mayor 60 años o más: ${pad(report.age_groups.adulto_mayor_60)}
+
+▪️ Referencia de casos: ${pad((report.references?.ambulancia_mas_salud || 0) + (report.references?.propios_medios || 0))}
+
+*4- Por Programa de Salud*
+▪️ Cardiovascular: ${pad(report.epidemiology.cardiovascular)}
+▪️ Diabetes: ${pad(report.epidemiology.diabetes)}
+▪️Asma: ${pad(report.epidemiology.asma)}
+▪️IRA: ${pad(report.epidemiology.ira)}
+▪️Casos de mordeduras canina: ${pad(report.epidemiology.mordeduras_canina || 0)}
 
 ▪️💉 *Responsables del Reporte : ${report.header.staff_enfermeria}
 Consulta Médico General: ${report.header.doctor_general}

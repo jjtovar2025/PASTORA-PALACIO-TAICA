@@ -7,6 +7,32 @@ interface PatientEntryFormProps {
   onAdd: (entry: PatientEntry) => void;
 }
 
+const InputField = React.memo(({ label, name, value, onChange, type = "text", placeholder = "", required = false }: any) => (
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
+    <input
+      type={type}
+      required={required}
+      value={value}
+      onChange={e => onChange(name, e.target.value)}
+      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+      placeholder={placeholder}
+    />
+  </div>
+));
+
+const TextAreaField = React.memo(({ label, name, value, onChange, placeholder = "", height = "h-20" }: any) => (
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
+    <textarea
+      value={value}
+      onChange={e => onChange(name, e.target.value)}
+      className={`w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold ${height} resize-none`}
+      placeholder={placeholder}
+    />
+  </div>
+));
+
 export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => {
   const [formData, setFormData] = useState<Omit<PatientEntry, 'id'>>({
     date: new Date().toISOString().split('T')[0],
@@ -36,6 +62,10 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
     referredSpecialist: false,
     exitTime: ''
   });
+
+  const handleInputChange = React.useCallback((name: string, value: any) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,20 +105,6 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
     });
   };
 
-  const InputField = ({ label, name, type = "text", placeholder = "", required = false }: any) => (
-    <div className="space-y-1">
-      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
-      <input
-        type={type}
-        required={required}
-        value={(formData as any)[name]}
-        onChange={e => setFormData({ ...formData, [name]: e.target.value })}
-        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
-        placeholder={placeholder}
-      />
-    </div>
-  );
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Sección 1: Información Básica */}
@@ -101,22 +117,22 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <InputField label="Fecha" name="date" type="date" required />
-          <InputField label="Hora Ingreso" name="entryTime" type="time" required />
+          <InputField label="Fecha" name="date" type="date" required value={formData.date} onChange={handleInputChange} />
+          <InputField label="Hora Ingreso" name="entryTime" type="time" required value={formData.entryTime} onChange={handleInputChange} />
           <div className="col-span-2">
-            <InputField label="Nombres y Apellidos" name="name" required placeholder="Nombre completo" />
+            <InputField label="Nombres y Apellidos" name="name" required placeholder="Nombre completo" value={formData.name} onChange={handleInputChange} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <InputField label="Cédula" name="idNumber" placeholder="V-00000000" />
-          <InputField label="Fecha Nac." name="birthDate" type="date" />
-          <InputField label="Edad" name="age" placeholder="Ej: 25" />
+          <InputField label="Cédula" name="idNumber" placeholder="V-00000000" value={formData.idNumber} onChange={handleInputChange} />
+          <InputField label="Fecha Nac." name="birthDate" type="date" value={formData.birthDate} onChange={handleInputChange} />
+          <InputField label="Edad" name="age" placeholder="Ej: 25" value={formData.age} onChange={handleInputChange} />
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Sexo</label>
             <select
               value={formData.gender}
-              onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+              onChange={e => handleInputChange('gender', e.target.value)}
               className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
             >
               <option value="F">Femenino (F)</option>
@@ -135,13 +151,13 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <h3 className="font-bold text-slate-800">Signos Vitales</h3>
         </div>
         <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-          <InputField label="Peso (kg)" name="weight" />
-          <InputField label="Talla (cm)" name="height" />
-          <InputField label="F.C" name="heartRate" />
-          <InputField label="% sPo2" name="spo2" />
-          <InputField label="Temp ºC" name="temperature" />
-          <InputField label="P.A" name="bloodPressure" />
-          <InputField label="Gl" name="glucose" />
+          <InputField label="Peso (kg)" name="weight" value={formData.weight} onChange={handleInputChange} />
+          <InputField label="Talla (cm)" name="height" value={formData.height} onChange={handleInputChange} />
+          <InputField label="F.C" name="heartRate" value={formData.heartRate} onChange={handleInputChange} />
+          <InputField label="% sPo2" name="spo2" value={formData.spo2} onChange={handleInputChange} />
+          <InputField label="Temp ºC" name="temperature" value={formData.temperature} onChange={handleInputChange} />
+          <InputField label="P.A" name="bloodPressure" value={formData.bloodPressure} onChange={handleInputChange} />
+          <InputField label="Gl" name="glucose" value={formData.glucose} onChange={handleInputChange} />
         </div>
       </div>
 
@@ -154,12 +170,12 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <h3 className="font-bold text-slate-800">Ubicación y Contacto</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField label="Dirección" name="address" placeholder="Calle, Sector..." />
-          <InputField label="Parroquia" name="parish" placeholder="Ej: El Recreo" />
+          <InputField label="Dirección" name="address" placeholder="Calle, Sector..." value={formData.address} onChange={handleInputChange} />
+          <InputField label="Parroquia" name="parish" placeholder="Ej: El Recreo" value={formData.parish} onChange={handleInputChange} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField label="Nº Telefónico" name="phone" placeholder="0414-0000000" />
-          <InputField label="Telf. Acompañante" name="companionPhone" placeholder="0414-0000000" />
+          <InputField label="Nº Telefónico" name="phone" placeholder="0414-0000000" value={formData.phone} onChange={handleInputChange} />
+          <InputField label="Telf. Acompañante" name="companionPhone" placeholder="0414-0000000" value={formData.companionPhone} onChange={handleInputChange} />
         </div>
       </div>
 
@@ -172,26 +188,10 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <h3 className="font-bold text-slate-800">Consulta y Diagnóstico</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Motivo de Consulta</label>
-            <textarea
-              value={formData.reason}
-              onChange={e => setFormData({ ...formData, reason: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
-              placeholder="Describa el motivo..."
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Diagnóstico Médico</label>
-            <textarea
-              value={formData.diagnosis}
-              onChange={e => setFormData({ ...formData, diagnosis: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
-              placeholder="Diagnóstico..."
-            />
-          </div>
+          <TextAreaField label="Motivo de Consulta" name="reason" value={formData.reason} onChange={handleInputChange} placeholder="Describa el motivo..." />
+          <TextAreaField label="Diagnóstico Médico" name="diagnosis" value={formData.diagnosis} onChange={handleInputChange} placeholder="Diagnóstico..." />
         </div>
-        <InputField label="Especialidad" name="specialty" placeholder="Ej: Medicina General" />
+        <InputField label="Especialidad" name="specialty" placeholder="Ej: Medicina General" value={formData.specialty} onChange={handleInputChange} />
       </div>
 
       {/* Sección 5: Tratamiento y Referencia */}
@@ -203,24 +203,8 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <h3 className="font-bold text-slate-800">Tratamiento y Referencia</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tratamiento Colocado</label>
-            <textarea
-              value={formData.treatmentGiven}
-              onChange={e => setFormData({ ...formData, treatmentGiven: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
-              placeholder="Tratamiento administrado..."
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tratamiento Recetado</label>
-            <textarea
-              value={formData.treatmentPrescribed}
-              onChange={e => setFormData({ ...formData, treatmentPrescribed: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
-              placeholder="Tratamiento para la casa..."
-            />
-          </div>
+          <TextAreaField label="Tratamiento Colocado" name="treatmentGiven" value={formData.treatmentGiven} onChange={handleInputChange} placeholder="Tratamiento administrado..." />
+          <TextAreaField label="Tratamiento Recetado" name="treatmentPrescribed" value={formData.treatmentPrescribed} onChange={handleInputChange} placeholder="Tratamiento para la casa..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
@@ -228,7 +212,7 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
               type="checkbox"
               id="referredHvsr"
               checked={formData.referredHvsr}
-              onChange={e => setFormData({ ...formData, referredHvsr: e.target.checked })}
+              onChange={e => handleInputChange('referredHvsr', e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
             <label htmlFor="referredHvsr" className="text-xs font-bold text-slate-700">Referido al HVSR</label>
@@ -238,12 +222,12 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
               type="checkbox"
               id="referredSpecialist"
               checked={formData.referredSpecialist}
-              onChange={e => setFormData({ ...formData, referredSpecialist: e.target.checked })}
+              onChange={e => handleInputChange('referredSpecialist', e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
             <label htmlFor="referredSpecialist" className="text-xs font-bold text-slate-700">Ref. Consulta Espec.</label>
           </div>
-          <InputField label="Hora Salida" name="exitTime" type="time" />
+          <InputField label="Hora Salida" name="exitTime" type="time" value={formData.exitTime} onChange={handleInputChange} />
         </div>
       </div>
 
