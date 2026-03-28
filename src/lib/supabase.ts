@@ -8,7 +8,9 @@ export const supabase = (supabaseUrl && supabaseKey)
   : null;
 
 export async function saveReport(report: any) {
-  if (!supabase) return null;
+  if (!supabase) {
+    throw new Error('Supabase no está configurado. Verifique las variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.');
+  }
   
   const { data, error } = await supabase
     .from('reportes_diarios')

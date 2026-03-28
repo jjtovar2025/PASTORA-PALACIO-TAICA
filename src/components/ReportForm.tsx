@@ -30,8 +30,9 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onSuccess, phoneNumbers 
       // 2. Save to Supabase
       try {
         await saveReport(report);
-      } catch (err) {
-        console.warn('Supabase not configured or error saving:', err);
+      } catch (err: any) {
+        console.error('Supabase error:', err);
+        setStatus({ type: 'error', message: `AVISO: No se pudo guardar en Supabase: ${err.message}. El proceso continuará para WhatsApp.` });
       }
 
       // 3. Send to Apps Script (Google Sheets)
@@ -49,14 +50,14 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onSuccess, phoneNumbers 
         }
       }
 
-      setStatus({ type: 'success', message: 'Reporte procesado y guardado correctamente.' });
+      // 4. Prepare for WhatsApp
       setLastReport(report);
       setShowWhatsAppOptions(true);
       setText('');
       onSuccess(report);
-    } catch (err) {
-      console.error(err);
-      setStatus({ type: 'error', message: 'Error al procesar el reporte. Verifique el formato.' });
+    } catch (err: any) {
+      console.error('Error general:', err);
+      setStatus({ type: 'error', message: `Error crítico: ${err.message || 'Error desconocido'}` });
     } finally {
       setLoading(false);
     }

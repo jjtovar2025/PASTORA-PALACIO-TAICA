@@ -216,17 +216,26 @@ Especialista: ${data.header.doctor_specialist}`;
       } as HealthReport;
 
       // 1. Save to Supabase
-      await saveReport(finalReport);
+      try {
+        await saveReport(finalReport);
+      } catch (err: any) {
+        console.error('Error saving to Supabase:', err);
+        alert(`AVISO: No se pudo guardar en Supabase: ${err.message}. El proceso continuará para WhatsApp.`);
+      }
 
       // 2. Send to Apps Script
       const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
       if (appsScriptUrl) {
-        await fetch(appsScriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalReport)
-        });
+        try {
+          await fetch(appsScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalReport)
+          });
+        } catch (err) {
+          console.error('Error sending to Apps Script:', err);
+        }
       }
 
       // 3. Prepare for WhatsApp
@@ -234,9 +243,9 @@ Especialista: ${data.header.doctor_specialist}`;
       setShowWhatsAppOptions(true);
 
       onSuccess(finalReport);
-    } catch (err) {
-      console.error('Error saving report:', err);
-      alert('Error al guardar el reporte. Verifique la conexión.');
+    } catch (err: any) {
+      console.error('Error general:', err);
+      alert(`Error crítico: ${err.message || 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
