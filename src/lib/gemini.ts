@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { HealthReport } from "../types";
 
-const SYSTEM_INSTRUCTION = `Rol: Eres un Agente de Inteligencia de Datos para el Centro + Salud "Pastora Palacios Taica". Tu función es procesar reportes de texto clínico y devolver una estructura lista para INSERT en Supabase y APPEND en Google Sheets.
+const SYSTEM_INSTRUCTION = `Rol: Eres un Agente de Inteligencia de Datos para el Centro + Salud "Pastora Palacios Taica". Tu función es procesar reportes de texto clínico y devolver una estructura de datos estandarizada para su almacenamiento en la base de datos y envío a Google Sheets.
 
 1. REGLAS DE NORMALIZACIÓN DE DATOS:
 - Fechas: Convierte cualquier fecha encontrada al formato ISO YYYY-MM-DD.
