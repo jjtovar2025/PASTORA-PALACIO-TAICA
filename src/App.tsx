@@ -35,7 +35,7 @@ import { motion, AnimatePresence } from 'motion/react';
 function App() {
   const [reports, setReports] = useState<HealthReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history' | 'patients'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'patients'>('patients');
   const [online, setOnline] = useState(isOnline());
 
   useEffect(() => {
@@ -113,6 +113,8 @@ function App() {
     setActiveTab('dashboard');
   };
 
+  const [selectedReport, setSelectedReport] = useState<HealthReport | null>(null);
+
   const handleCloseDay = async () => {
     setClosingDay(true);
     try {
@@ -149,6 +151,7 @@ function App() {
       setLastGeneratedReport(report);
       setReports([report, ...reports]);
       setPatients([]); // Clear patients for next day
+      localStorage.removeItem('health_app_patients');
       setShowCloseDayModal(false);
       setShowWhatsAppOptions(true);
     } catch (err) {
@@ -185,12 +188,6 @@ function App() {
             onClick={() => { setActiveTab('dashboard'); setShowSettings(false); }} 
             icon={LayoutDashboard} 
             label="Panel" 
-          />
-          <NavButton 
-            active={activeTab === 'new'} 
-            onClick={() => { setActiveTab('new'); setShowSettings(false); }} 
-            icon={PlusCircle} 
-            label="Nuevo" 
           />
           <NavButton 
             active={activeTab === 'patients'} 
@@ -388,43 +385,6 @@ function App() {
                   </div>
                 )}
 
-                {activeTab === 'new' && (
-                  <div className="max-w-4xl mx-auto">
-                    <div className="text-center mb-8">
-                      <h2 className="text-3xl font-black text-slate-900 mb-2">Registrar Morbilidad</h2>
-                      <p className="text-slate-500 font-medium">Elija el método de entrada para el reporte diario</p>
-                    </div>
-
-                    {/* Mode Selector */}
-                    <div className="flex p-1 bg-slate-200 rounded-2xl mb-8 max-w-md mx-auto">
-                      <button
-                        onClick={() => setEntryMode('manual')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-                          entryMode === 'manual' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        <FileText className="w-4 h-4" />
-                        Formulario
-                      </button>
-                      <button
-                        onClick={() => setEntryMode('ai')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
-                          entryMode === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        <BrainCircuit className="w-4 h-4" />
-                        Pegar Texto
-                      </button>
-                    </div>
-
-                    {entryMode === 'manual' ? (
-                      <ManualReportForm onSuccess={handleReportSuccess} phoneNumbers={phoneNumbers} />
-                    ) : (
-                      <ReportForm onSuccess={handleReportSuccess} phoneNumbers={phoneNumbers} />
-                    )}
-                  </div>
-                )}
-
                 {activeTab === 'history' && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -477,6 +437,13 @@ function App() {
                                   </td>
                                   <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-2">
+                                      <button
+                                        onClick={() => setSelectedReport(report)}
+                                        className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl font-bold text-[10px] hover:bg-blue-600 hover:text-white transition-all"
+                                      >
+                                        <Users className="w-3 h-3" />
+                                        PACIENTES
+                                      </button>
                                       {phoneNumbers.length > 0 ? (
                                         phoneNumbers.map((phone, pIdx) => (
                                           <button
@@ -672,6 +639,101 @@ function App() {
             </motion.div>
           </motion.div>
         )}
+
+        {/* Patient List Modal for History */}
+        <AnimatePresence>
+          {selectedReport && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+              >
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900">PACIENTES DEL DÍA</h2>
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                      {selectedReport.header.date} • {selectedReport.header.day}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedReport(null)}
+                    className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                  >
+                    <PlusCircle className="w-6 h-6 rotate-45 text-slate-400" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-auto p-6">
+                  {!selectedReport.patients || selectedReport.patients.length === 0 ? (
+                    <div className="text-center py-12 text-slate-400 font-medium">
+                      No hay lista de pacientes detallada para este reporte.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[1200px]">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200">
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">N°</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hora</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cédula</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Edad</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sexo</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Peso/Talla</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vitales</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Motivo</th>
+                            <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnóstico</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {selectedReport.patients.map((p, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors text-xs">
+                              <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
+                              <td className="px-4 py-3 font-bold text-slate-700">{p.entryTime}</td>
+                              <td className="px-4 py-3 font-bold text-slate-900">{p.name}</td>
+                              <td className="px-4 py-3 font-medium text-slate-600">{p.idNumber || 'S/C'}</td>
+                              <td className="px-4 py-3 font-medium text-slate-600">{p.age}</td>
+                              <td className="px-4 py-3 font-bold text-slate-600">{p.gender}</td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {p.weight}kg / {p.height}cm
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                <div className="flex flex-col gap-0.5">
+                                  <span>FC: {p.heartRate}</span>
+                                  <span>SpO2: {p.spo2}%</span>
+                                  <span>T: {p.temperature}°C</span>
+                                  <span>PA: {p.bloodPressure}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 max-w-[150px] truncate" title={p.reason}>
+                                {p.reason}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600 max-w-[150px] truncate font-bold italic" title={p.diagnosis}>
+                                {p.diagnosis}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+                  <button 
+                    onClick={() => exportToExcel(selectedReport.patients || [], selectedReport)}
+                    className="bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 flex items-center gap-2"
+                  >
+                    <Activity className="w-4 h-4" />
+                    DESCARGAR EXCEL
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
     </div>
   );

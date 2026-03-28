@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PatientEntry } from '../types';
-import { User, Activity, ShieldAlert, Save, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { User, Activity, ShieldAlert, Save, Plus, Trash2, CheckCircle2, Clock, MapPin, Phone, Stethoscope, ClipboardList } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface PatientEntryFormProps {
@@ -8,209 +8,248 @@ interface PatientEntryFormProps {
 }
 
 export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => {
-  const [formData, setFormData] = useState<Omit<PatientEntry, 'id' | 'timestamp'>>({
+  const [formData, setFormData] = useState<Omit<PatientEntry, 'id'>>({
+    date: new Date().toISOString().split('T')[0],
+    entryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
     name: '',
-    age: 0,
-    gender: 'Femenino',
-    service: 'Medicina General',
-    activities: [],
-    programs: [],
-    reference: undefined
+    idNumber: '',
+    birthDate: '',
+    age: '',
+    gender: 'F',
+    weight: '',
+    height: '',
+    heartRate: '',
+    spo2: '',
+    temperature: '',
+    bloodPressure: '',
+    glucose: '',
+    address: '',
+    parish: '',
+    phone: '',
+    companionPhone: '',
+    reason: '',
+    specialty: '',
+    diagnosis: '',
+    treatmentGiven: '',
+    treatmentPrescribed: '',
+    referredHvsr: false,
+    referredSpecialist: false,
+    exitTime: ''
   });
-
-  const services = [
-    'Medicina General', 'Emergencia', 'Pediatría', 'Geriatría', 
-    'Medicina Interna', 'Ginecología', 'Prenatal', 'Enfermería'
-  ];
-
-  const activities = [
-    'Control de T/A', 'Control de glicemia', 'Control peso', 'Talla',
-    'Tto E/V', 'Tto I/M', 'Tto S/L', 'Tto V/O', 'Tto S/C', 'Tto protocolo',
-    'Nebulizaciones', 'Curas', 'Suturas', 'Retiro de puntos', 'Sondas',
-    'Lavado ocular', 'Lavado nasal', 'Lavado de oidos', 'Electros',
-    'Visitas domiciliares', 'Jornadas especiales', 'Entregas de ayudas', 'Vacunas de rutina'
-  ];
-
-  const programs = [
-    'Cardiovascular', 'Diabetes', 'Asma', 'IRA', 'Embarazada',
-    'COVID-19', 'Fiebre', 'Dengue', 'Zika', 'Chicungunya',
-    'Varicela', 'Rubeola', 'Sarampión', 'H1N1', 'Mordedura canina'
-  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const entry: PatientEntry = {
       ...formData,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString()
+      id: Math.random().toString(36).substr(2, 9)
     };
     onAdd(entry);
-    // Reset form but keep some context if needed
+    // Reset form
     setFormData({
+      date: new Date().toISOString().split('T')[0],
+      entryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
       name: '',
-      age: 0,
-      gender: 'Femenino',
-      service: 'Medicina General',
-      activities: [],
-      programs: [],
-      reference: undefined
+      idNumber: '',
+      birthDate: '',
+      age: '',
+      gender: 'F',
+      weight: '',
+      height: '',
+      heartRate: '',
+      spo2: '',
+      temperature: '',
+      bloodPressure: '',
+      glucose: '',
+      address: '',
+      parish: '',
+      phone: '',
+      companionPhone: '',
+      reason: '',
+      specialty: '',
+      diagnosis: '',
+      treatmentGiven: '',
+      treatmentPrescribed: '',
+      referredHvsr: false,
+      referredSpecialist: false,
+      exitTime: ''
     });
   };
 
-  const toggleItem = (list: string[], item: string, field: 'activities' | 'programs') => {
-    const newList = list.includes(item) 
-      ? list.filter(i => i !== item)
-      : [...list, item];
-    setFormData(prev => ({ ...prev, [field]: newList }));
-  };
+  const InputField = ({ label, name, type = "text", placeholder = "", required = false }: any) => (
+    <div className="space-y-1">
+      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
+      <input
+        type={type}
+        required={required}
+        value={(formData as any)[name]}
+        onChange={e => setFormData({ ...formData, [name]: e.target.value })}
+        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+        placeholder={placeholder}
+      />
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+      {/* Sección 1: Información Básica */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
             <User className="text-blue-600 w-5 h-5" />
           </div>
-          <h3 className="font-bold text-slate-800">Datos del Paciente</h3>
+          <h3 className="font-bold text-slate-800">Información Básica</h3>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
-              placeholder="Ej: Juan Pérez"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Edad</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                value={formData.age || ''}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setFormData({ ...formData, age: parseInt(val) || 0 });
-                }}
-                className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Género</label>
-              <select
-                value={formData.gender}
-                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                className="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <option value="Femenino">Femenino</option>
-                <option value="Masculino">Masculino</option>
-              </select>
-            </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <InputField label="Fecha" name="date" type="date" required />
+          <InputField label="Hora Ingreso" name="entryTime" type="time" required />
+          <div className="col-span-2">
+            <InputField label="Nombres y Apellidos" name="name" required placeholder="Nombre completo" />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Servicio de Atención</label>
-          <div className="flex flex-wrap gap-2">
-            {services.map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setFormData({ ...formData, service: s as any })}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  formData.service === s 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-100' 
-                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <InputField label="Cédula" name="idNumber" placeholder="V-00000000" />
+          <InputField label="Fecha Nac." name="birthDate" type="date" />
+          <InputField label="Edad" name="age" placeholder="Ej: 25" />
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Sexo</label>
+            <select
+              value={formData.gender}
+              onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+            >
+              <option value="F">Femenino (F)</option>
+              <option value="M">Masculino (M)</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-              <Activity className="text-emerald-600 w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-800">Actividades / Tto</h3>
+      {/* Sección 2: Signos Vitales */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <Activity className="text-emerald-600 w-5 h-5" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {activities.map(a => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => toggleItem(formData.activities, a, 'activities')}
-                className={`px-3 py-2 rounded-xl text-[10px] font-bold text-left transition-all ${
-                  formData.activities.includes(a)
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {a}
-              </button>
-            ))}
+          <h3 className="font-bold text-slate-800">Signos Vitales</h3>
+        </div>
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
+          <InputField label="Peso (kg)" name="weight" />
+          <InputField label="Talla (cm)" name="height" />
+          <InputField label="F.C" name="heartRate" />
+          <InputField label="% sPo2" name="spo2" />
+          <InputField label="Temp ºC" name="temperature" />
+          <InputField label="P.A" name="bloodPressure" />
+          <InputField label="Gl" name="glucose" />
+        </div>
+      </div>
+
+      {/* Sección 3: Ubicación y Contacto */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+            <MapPin className="text-purple-600 w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-800">Ubicación y Contacto</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputField label="Dirección" name="address" placeholder="Calle, Sector..." />
+          <InputField label="Parroquia" name="parish" placeholder="Ej: El Recreo" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputField label="Nº Telefónico" name="phone" placeholder="0414-0000000" />
+          <InputField label="Telf. Acompañante" name="companionPhone" placeholder="0414-0000000" />
+        </div>
+      </div>
+
+      {/* Sección 4: Consulta y Diagnóstico */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+            <Stethoscope className="text-amber-600 w-5 h-5" />
+          </div>
+          <h3 className="font-bold text-slate-800">Consulta y Diagnóstico</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Motivo de Consulta</label>
+            <textarea
+              value={formData.reason}
+              onChange={e => setFormData({ ...formData, reason: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
+              placeholder="Describa el motivo..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Diagnóstico Médico</label>
+            <textarea
+              value={formData.diagnosis}
+              onChange={e => setFormData({ ...formData, diagnosis: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
+              placeholder="Diagnóstico..."
+            />
           </div>
         </div>
+        <InputField label="Especialidad" name="specialty" placeholder="Ej: Medicina General" />
+      </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-              <ShieldAlert className="text-amber-600 w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-slate-800">Programas de Salud</h3>
+      {/* Sección 5: Tratamiento y Referencia */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
+            <ClipboardList className="text-rose-600 w-5 h-5" />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {programs.map(p => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => toggleItem(formData.programs, p, 'programs')}
-                className={`px-3 py-2 rounded-xl text-[10px] font-bold text-left transition-all ${
-                  formData.programs.includes(p)
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+          <h3 className="font-bold text-slate-800">Tratamiento y Referencia</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tratamiento Colocado</label>
+            <textarea
+              value={formData.treatmentGiven}
+              onChange={e => setFormData({ ...formData, treatmentGiven: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
+              placeholder="Tratamiento administrado..."
+            />
           </div>
-          
-          <div className="pt-4 border-t border-slate-100">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Referencia</label>
-            <div className="flex gap-2 mt-2">
-              {['Ambulancia', 'Propios Medios'].map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, reference: formData.reference === r ? undefined : r as any })}
-                  className={`flex-1 px-3 py-2 rounded-xl text-[10px] font-bold transition-all ${
-                    formData.reference === r
-                      ? 'bg-slate-800 text-white'
-                      : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tratamiento Recetado</label>
+            <textarea
+              value={formData.treatmentPrescribed}
+              onChange={e => setFormData({ ...formData, treatmentPrescribed: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold h-20 resize-none"
+              placeholder="Tratamiento para la casa..."
+            />
           </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="referredHvsr"
+              checked={formData.referredHvsr}
+              onChange={e => setFormData({ ...formData, referredHvsr: e.target.checked })}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="referredHvsr" className="text-xs font-bold text-slate-700">Referido al HVSR</label>
+          </div>
+          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="referredSpecialist"
+              checked={formData.referredSpecialist}
+              onChange={e => setFormData({ ...formData, referredSpecialist: e.target.checked })}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="referredSpecialist" className="text-xs font-bold text-slate-700">Ref. Consulta Espec.</label>
+          </div>
+          <InputField label="Hora Salida" name="exitTime" type="time" />
         </div>
       </div>
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-4 rounded-3xl font-bold text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+        className="w-full bg-blue-600 text-white py-4 rounded-3xl font-black text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
       >
         <Plus className="w-5 h-5" />
         REGISTRAR PACIENTE

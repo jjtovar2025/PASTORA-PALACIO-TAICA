@@ -120,27 +120,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
   );
 
   // Data for Specializations
-  const specData = [
-    { name: 'Med. General', value: aggregatedData.stats.med_general },
-    { name: 'Emergencia', value: aggregatedData.stats.emergencia },
-    { name: 'Pediatría', value: aggregatedData.stats.pediatria },
-    { name: 'Geriatría', value: aggregatedData.stats.geriatria },
-    { name: 'Med. Interna', value: aggregatedData.stats.med_interna },
-    { name: 'Ginecología', value: aggregatedData.stats.ginecologia },
-    { name: 'Prenatal', value: aggregatedData.stats.prenatal },
-  ].filter(d => d.value > 0);
-
-  // Data for Nursing Activities
-  const activityData = [
-    { name: 'T/A', value: aggregatedData.activities.ta_control },
-    { name: 'Glicemia', value: aggregatedData.activities.glicemia },
-    { name: 'Peso', value: aggregatedData.activities.peso },
-    { name: 'Tto E/V', value: aggregatedData.activities.tto_ev },
-    { name: 'Tto I/M', value: aggregatedData.activities.tto_im },
-    { name: 'Curas', value: aggregatedData.activities.curas },
-    { name: 'Suturas', value: aggregatedData.activities.suturas },
-    { name: 'Nebuliz.', value: aggregatedData.activities.nebulizaciones },
-  ];
+  const specData = useMemo(() => {
+    const specs: { [key: string]: number } = {};
+    filteredReports.forEach(r => {
+      if (r.patients) {
+        r.patients.forEach(p => {
+          const s = p.specialty || 'General';
+          specs[s] = (specs[s] || 0) + 1;
+        });
+      }
+    });
+    return Object.entries(specs).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
+  }, [filteredReports]);
 
   // Data for Age Groups
   const ageData = [
@@ -151,17 +142,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
     { name: '18-29', value: aggregatedData.age_groups.adulto_joven_18_29 },
     { name: '30-59', value: aggregatedData.age_groups.adulto_30_59 },
     { name: '60+', value: aggregatedData.age_groups.adulto_mayor_60 },
-  ];
-
-  // Data for Epidemiology
-  const epiData = [
-    { name: 'Cardio', value: aggregatedData.epidemiology.cardiovascular },
-    { name: 'Diabetes', value: aggregatedData.epidemiology.diabetes },
-    { name: 'IRA/Asma', value: aggregatedData.epidemiology.ira + aggregatedData.epidemiology.asma },
-    { name: 'Fiebre/Dengue', value: aggregatedData.epidemiology.fiebre + aggregatedData.epidemiology.dengue },
-    { name: 'COVID', value: aggregatedData.epidemiology.covid_19 },
-    { name: 'Diarreas', value: aggregatedData.epidemiology.diarreas },
-    { name: 'Hipertensión', value: aggregatedData.epidemiology.hipertension },
   ];
 
   const StatCard = ({ title, value, icon: Icon, color }: any) => (
@@ -188,11 +168,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title="Total Atendidos" value={aggregatedData.stats.total_patients} icon={Users} color="bg-blue-600" />
-        <StatCard title="Actividades" value={Object.values(aggregatedData.activities).reduce((a, b) => (a as number) + (b as number), 0)} icon={Activity} color="bg-emerald-600" />
-        <StatCard title="Vigilancia" value={Object.values(aggregatedData.epidemiology).filter(v => typeof v === 'number').reduce((a, b) => (a as number) + (b as number), 0)} icon={ShieldAlert} color="bg-amber-600" />
-        <StatCard title="Estado Alerta" value={aggregatedData.epidemiology.status_level} icon={ClipboardCheck} color={aggregatedData.epidemiology.status_level === 'CRITICAL' ? 'bg-red-600' : aggregatedData.epidemiology.status_level === 'WARNING' ? 'bg-amber-500' : 'bg-green-600'} />
+        <StatCard title="Femenino" value={aggregatedData.stats.female} icon={Users} color="bg-pink-500" />
+        <StatCard title="Masculino" value={aggregatedData.stats.male} icon={Users} color="bg-blue-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -249,52 +228,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
                 />
                 <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Activities Chart */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-emerald-600" />
-            Actividades de Enfermería
-          </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={activityData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Epidemiology Chart */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-amber-600" />
-            Vigilancia Epidemiológica
-          </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={epiData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#f59e0b" fillOpacity={1} fill="url(#colorValue)" strokeWidth={3} />
-              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>

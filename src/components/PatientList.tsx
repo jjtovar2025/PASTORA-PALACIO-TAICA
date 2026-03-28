@@ -53,22 +53,29 @@ export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, on
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
-                    p.gender === 'Femenino' ? 'bg-pink-50 text-pink-600' : 'bg-blue-50 text-blue-600'
+                    p.gender === 'F' ? 'bg-pink-50 text-pink-600' : 'bg-blue-50 text-blue-600'
                   }`}>
-                    {p.gender[0]}
+                    {p.gender}
                   </div>
                   <div>
                     <p className="font-bold text-slate-800 text-sm">{p.name}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-medium">
+                      <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-bold">{p.idNumber || 'S/C'}</span>
+                      <span>•</span>
                       <span>{p.age} años</span>
                       <span>•</span>
-                      <span className="text-blue-500 font-bold">{p.service}</span>
+                      <span className="text-blue-500 font-bold">{p.specialty || 'Gral'}</span>
                       <span>•</span>
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {p.entryTime}
                       </div>
                     </div>
+                    {p.diagnosis && (
+                      <p className="text-[10px] text-slate-500 mt-1 font-bold italic truncate max-w-[200px]">
+                        Dx: {p.diagnosis}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button
@@ -78,17 +85,6 @@ export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, on
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              
-              {(p.activities.length > 0 || p.programs.length > 0) && (
-                <div className="mt-3 pt-3 border-t border-slate-50 flex flex-wrap gap-1">
-                  {p.activities.map(a => (
-                    <span key={a} className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-lg text-[9px] font-bold">{a}</span>
-                  ))}
-                  {p.programs.map(pr => (
-                    <span key={pr} className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg text-[9px] font-bold">{pr}</span>
-                  ))}
-                </div>
-              )}
             </motion.div>
           ))}
         </AnimatePresence>
