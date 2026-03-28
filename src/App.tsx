@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { HealthReport } from './types';
+import { ReportForm } from './components/ReportForm';
+import { ManualReportForm } from './components/ManualReportForm';
+import { Dashboard } from './components/Dashboard';
+import { getReports } from './lib/supabase';
 import { 
   Activity, 
+  History, 
   LayoutDashboard, 
-  FileText, 
-  Settings, 
   PlusCircle, 
-  AlertTriangle,
-  Users,
+  Loader2, 
+  AlertCircle,
   Stethoscope,
-  Calendar as CalendarIcon,
-  ChevronRight,
-  Loader2,
-  CheckCircle2,
-  AlertCircle
+  FileText,
+  BrainCircuit,
+  Settings,
+  CheckCircle2
 } from 'lucide-react';
-import { HealthReport } from './types';
-import { getReports } from './lib/supabase';
-import { Dashboard } from './components/Dashboard';
-import { ReportForm } from './components/ReportForm';
-import { cn } from './lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
-export default function App() {
+function App() {
   const [reports, setReports] = useState<HealthReport[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'new'>('dashboard');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history'>('dashboard');
+  const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadReports();
   }, []);
 
   const loadReports = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const data = await getReports();
       if (data && Array.isArray(data)) {
         const formattedReports = data.map((r: any) => r.data as HealthReport);
@@ -40,275 +40,245 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error loading reports:', err);
+      setError('No se pudo conectar con la base de datos.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNewReport = (report: HealthReport) => {
-    setReports([report, ...reports]);
-    setTimeout(() => setActiveTab('dashboard'), 1500);
-  };
-
-  const getSemaforoColor = (status: string) => {
-    switch (status) {
-      case 'ROJO': return 'bg-red-500 shadow-red-200';
-      case 'NARANJA': return 'bg-orange-500 shadow-orange-200';
-      case 'VERDE': return 'bg-green-500 shadow-green-200';
-      default: return 'bg-gray-400';
-    }
+  const handleReportSuccess = (newReport: HealthReport) => {
+    setReports([newReport, ...reports]);
+    setActiveTab('dashboard');
   };
 
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
-  const hasAppsScript = !!import.meta.env.VITE_APPS_SCRIPT_URL;
-
-  console.log("App state:", { loading, reportsCount: reports.length, isConfigured });
-
-  if (loading && reports.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-slate-500 font-medium">Cargando datos del Centro + Salud...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
-      {!isConfigured && activeTab !== 'new' && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
-            <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6">
-              <Settings className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Conexión Pendiente</h3>
-            <p className="text-slate-600 mb-6">
-              Detectamos que faltan las llaves de <b>Supabase</b>. Agrégalas en el panel de Secrets para activar el Dashboard.
-            </p>
-            <div className="space-y-2 mb-8">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-xs font-bold text-slate-500">Supabase</span>
-                {isConfigured ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="text-xs font-bold text-slate-500">Google Sheets</span>
-                {hasAppsScript ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
-              </div>
-            </div>
-            <button 
-              onClick={() => setActiveTab('new')}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
-            >
-              Ir al Procesador de IA
-            </button>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans">
+      {/* Navigation Rail */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 md:top-0 md:bottom-0 md:left-0 md:w-24 md:flex-col md:border-r md:border-t-0 z-50 flex justify-around items-center">
+        <div className="hidden md:flex mb-8">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+            <Stethoscope className="text-white w-7 h-7" />
           </div>
         </div>
-      )}
-
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 z-50 hidden lg:block">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg leading-tight">Centro + Salud</h1>
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Gestión Morbilidad</p>
-            </div>
-          </div>
-
-          <nav className="space-y-1">
-            <NavItem 
-              active={activeTab === 'dashboard'} 
-              onClick={() => setActiveTab('dashboard')}
-              icon={<LayoutDashboard className="w-5 h-5" />}
-              label="Dashboard"
-            />
-            <NavItem 
-              active={activeTab === 'reports'} 
-              onClick={() => setActiveTab('reports')}
-              icon={<FileText className="w-5 h-5" />}
-              label="Historial"
-            />
-            <NavItem 
-              active={activeTab === 'new'} 
-              onClick={() => setActiveTab('new')}
-              icon={<PlusCircle className="w-5 h-5" />}
-              label="Nuevo Reporte"
-            />
-          </nav>
-        </div>
-
-        <div className="absolute bottom-0 w-full p-6 border-t border-slate-100">
-          <NavItem 
-            active={false}
-            onClick={() => {}}
-            icon={<Settings className="w-5 h-5" />}
-            label="Configuración"
+        
+        <div className="flex md:flex-col gap-8 md:gap-6">
+          <NavButton 
+            active={activeTab === 'dashboard'} 
+            onClick={() => setActiveTab('dashboard')} 
+            icon={LayoutDashboard} 
+            label="Panel" 
+          />
+          <NavButton 
+            active={activeTab === 'new'} 
+            onClick={() => setActiveTab('new')} 
+            icon={PlusCircle} 
+            label="Nuevo" 
+          />
+          <NavButton 
+            active={activeTab === 'history'} 
+            onClick={() => setActiveTab('history')} 
+            icon={History} 
+            label="Libro" 
           />
         </div>
-      </aside>
+
+        <div className="hidden md:flex mt-auto">
+          <NavButton active={false} onClick={() => {}} icon={Settings} label="Ajustes" />
+        </div>
+      </nav>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-4 md:p-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div id="app-header-content">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {activeTab === 'dashboard' && 'Panel de Control'}
-              {activeTab === 'reports' && 'Historial de Reportes'}
-              {activeTab === 'new' && 'Procesar Nuevo Reporte'}
-            </h2>
-            <p className="text-slate-500">Pastora Palacios Taica — Sistema de Vigilancia</p>
-          </div>
-
-          {reports.length > 0 && (
-            <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-2xl border border-slate-200 shadow-sm">
-              <div className={cn("w-3 h-3 rounded-full", getSemaforoColor(reports[0].registro.semaforo))} />
-              <span className="text-sm font-bold text-slate-700">Estado: {reports[0].registro.semaforo}</span>
+      <main className="md:ml-24 pb-24 md:pb-0 min-h-screen">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-black text-slate-900 tracking-tight">PASTORA PALACIOS TAICA</h1>
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Centro + Salud • Gestión de Morbilidad</p>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex flex-col items-end">
+                <span className="text-xs font-bold text-slate-400 uppercase">Estado del Sistema</span>
+                <span className="text-xs font-black text-emerald-500 flex items-center gap-1">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  EN LÍNEA
+                </span>
+              </div>
+            </div>
+          </div>
         </header>
 
-        <div className="tab-content">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                  icon={<Users className="text-blue-600" />} 
-                  label="Total Pacientes" 
-                  value={reports[0]?.totales.pacientes || 0}
-                  subValue="Último reporte"
-                />
-                <StatCard 
-                  icon={<Stethoscope className="text-emerald-600" />} 
-                  label="Med. General" 
-                  value={reports[0]?.totales.med_general || 0}
-                  subValue="Último reporte"
-                />
-                <StatCard 
-                  icon={<AlertTriangle className="text-rose-600" />} 
-                  label="Alertas Críticas" 
-                  value={reports[0]?.alertas_epidemiologicas.casos_criticos || 0}
-                  subValue="Casos detectados"
-                />
-                <StatCard 
-                  icon={<CalendarIcon className="text-amber-600" />} 
-                  label="Fecha Reporte" 
-                  value={reports[0]?.registro.fecha || '--'}
-                  subValue={reports[0]?.registro.dia || '--'}
-                  isText
-                />
-              </div>
-
-              <Dashboard reports={reports} />
+        <div className="max-w-7xl mx-auto p-6">
+          {!isConfigured && (
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl mb-8 flex items-center gap-4">
+              <AlertCircle className="text-amber-600 w-6 h-6" />
+              <p className="text-amber-800 text-sm font-medium">
+                <b>Configuración Pendiente:</b> Faltan las llaves de Supabase en los Secrets. El Dashboard no mostrará datos reales hasta que se configuren.
+              </p>
             </div>
           )}
 
-          {activeTab === 'reports' && (
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-bottom border-slate-200">
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Responsable</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Pacientes</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Semáforo</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {reports.map((report, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4">
-                        <div className="font-bold text-slate-900">{report.registro.fecha}</div>
-                        <div className="text-xs text-slate-500">{report.registro.dia}</div>
-                      </td>
-                      <td className="p-4 text-sm text-slate-600 font-medium">{report.registro.responsable}</td>
-                      <td className="p-4 text-sm font-bold text-slate-900">{report.totales.pacientes}</td>
-                      <td className="p-4">
-                        <span className={cn(
-                          "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          report.registro.semaforo === 'ROJO' ? 'bg-red-100 text-red-700' :
-                          report.registro.semaforo === 'NARANJA' ? 'bg-orange-100 text-orange-700' :
-                          'bg-green-100 text-green-700'
-                        )}>
-                          {report.registro.semaforo}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <button className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                          <ChevronRight className="w-4 h-4 text-slate-400" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {reports.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-12 text-center text-slate-400 italic">No hay reportes registrados</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div 
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center h-[60vh] gap-4"
+              >
+                <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                <p className="font-bold text-slate-400 animate-pulse">CARGANDO DATOS...</p>
+              </motion.div>
+            ) : error ? (
+              <motion.div 
+                key="error"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-50 border border-red-100 p-8 rounded-3xl text-center max-w-md mx-auto mt-12"
+              >
+                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h2 className="text-xl font-black text-red-900 mb-2">ERROR DE CONEXIÓN</h2>
+                <p className="text-red-700 font-medium mb-6">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-red-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+                >
+                  REINTENTAR
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {activeTab === 'dashboard' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-black text-slate-900">Panel de Control</h2>
+                      <span className="bg-white px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-500 shadow-sm">
+                        ACTUALIZADO: {new Date().toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <Dashboard reports={reports} />
+                  </div>
+                )}
 
-          {activeTab === 'new' && (
-            <div className="max-w-2xl mx-auto">
-              <ReportForm onSuccess={handleNewReport} />
-            </div>
-          )}
+                {activeTab === 'new' && (
+                  <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-8">
+                      <h2 className="text-3xl font-black text-slate-900 mb-2">Registrar Morbilidad</h2>
+                      <p className="text-slate-500 font-medium">Elija el método de entrada para el reporte diario</p>
+                    </div>
+
+                    {/* Mode Selector */}
+                    <div className="flex p-1 bg-slate-200 rounded-2xl mb-8 max-w-md mx-auto">
+                      <button
+                        onClick={() => setEntryMode('manual')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
+                          entryMode === 'manual' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <FileText className="w-4 h-4" />
+                        Formulario
+                      </button>
+                      <button
+                        onClick={() => setEntryMode('ai')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
+                          entryMode === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        <BrainCircuit className="w-4 h-4" />
+                        Pegar Texto
+                      </button>
+                    </div>
+
+                    {entryMode === 'manual' ? (
+                      <ManualReportForm onSuccess={handleReportSuccess} />
+                    ) : (
+                      <ReportForm onSuccess={handleReportSuccess} />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'history' && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-black text-slate-900">Libro de Morbilidad</h2>
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Fecha</th>
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Día</th>
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Atendidos</th>
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Alerta</th>
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Responsable</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {reports.map((report, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50 transition-colors group">
+                                <td className="px-6 py-4 font-bold text-slate-700">{report.header.date}</td>
+                                <td className="px-6 py-4 font-bold text-slate-500">{report.header.day}</td>
+                                <td className="px-6 py-4">
+                                  <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-black text-sm">
+                                    {report.stats.total_patients}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-tighter ${
+                                    report.epidemiology.status_level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                                    report.epidemiology.status_level === 'WARNING' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {report.epidemiology.status_level}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-slate-500 font-medium">{report.header.staff_enfermeria}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
-
-      {/* Mobile Nav */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 lg:hidden flex justify-around p-3 z-50">
-        <button onClick={() => setActiveTab('dashboard')} className={cn("p-2 rounded-xl", activeTab === 'dashboard' ? "text-blue-600 bg-blue-50" : "text-slate-400")}>
-          <LayoutDashboard className="w-6 h-6" />
-        </button>
-        <button onClick={() => setActiveTab('new')} className={cn("p-2 rounded-xl", activeTab === 'new' ? "text-blue-600 bg-blue-50" : "text-slate-400")}>
-          <PlusCircle className="w-6 h-6" />
-        </button>
-        <button onClick={() => setActiveTab('reports')} className={cn("p-2 rounded-xl", activeTab === 'reports' ? "text-blue-600 bg-blue-50" : "text-slate-400")}>
-          <FileText className="w-6 h-6" />
-        </button>
-      </nav>
     </div>
   );
 }
 
-function NavItem({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+function NavButton({ active, onClick, icon: Icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
     <button
       onClick={onClick}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all",
-        active 
-          ? "bg-blue-50 text-blue-600 shadow-sm" 
-          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-      )}
+      className={`flex flex-col items-center gap-1 transition-all group relative ${
+        active ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+      }`}
     >
-      {icon}
-      <span>{label}</span>
-      {active && <motion.div layoutId="active-pill" className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
+      <div className={`p-3 rounded-2xl transition-all ${
+        active ? 'bg-blue-50' : 'group-hover:bg-slate-50'
+      }`}>
+        <Icon className={`w-6 h-6 ${active ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+      </div>
+      <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+      {active && (
+        <motion.div 
+          layoutId="nav-active"
+          className="absolute -left-6 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-600 rounded-r-full hidden md:block"
+        />
+      )}
     </button>
   );
 }
 
-function StatCard({ icon, label, value, subValue, isText = false }: { icon: React.ReactNode, label: string, value: string | number, subValue: string, isText?: boolean }) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
-      </div>
-      <div className="space-y-1">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
-        <h4 className={cn("font-bold text-slate-900", isText ? "text-lg" : "text-2xl")}>{value}</h4>
-        <p className="text-[10px] text-slate-400 font-medium">{subValue}</p>
-      </div>
-    </div>
-  );
-}
+export default App;

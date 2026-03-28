@@ -11,12 +11,12 @@ export async function saveReport(report: any) {
   if (!supabase) return null;
   
   const { data, error } = await supabase
-    .from('health_reports')
+    .from('reportes_diarios')
     .insert([
       {
-        report_date: report.registro.fecha,
+        report_date: report.header.date,
         data: report,
-        semaforo: report.registro.semaforo
+        status_level: report.epidemiology.status_level
       }
     ])
     .select();
@@ -29,7 +29,7 @@ export async function getReports() {
   if (!supabase) return [];
   
   const { data, error } = await supabase
-    .from('health_reports')
+    .from('reportes_diarios')
     .select('*')
     .order('report_date', { ascending: false });
 
