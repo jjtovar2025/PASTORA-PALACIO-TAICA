@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Activity, 
   LayoutDashboard, 
@@ -61,6 +61,8 @@ export default function App() {
 
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
   const hasAppsScript = !!import.meta.env.VITE_APPS_SCRIPT_URL;
+
+  console.log("App state:", { loading, reportsCount: reports.length, isConfigured });
 
   if (loading && reports.length === 0) {
     return (

@@ -21,7 +21,13 @@ Debes generar un campo llamado semaforo basado en las siguientes reglas:
 No escribas texto adicional, ni saludos, ni explicaciones. Tu respuesta debe ser ÚNICAMENTE un objeto JSON con la estructura definida.`;
 
 export async function processReport(text: string): Promise<HealthReport> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY) || (process.env.GEMINI_API_KEY);
+  
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY no configurada en los Secrets.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
