@@ -29,7 +29,12 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onSuccess, phoneNumbers 
       
       // 2. Save to Supabase
       try {
-        await saveReport(report);
+        const result = await saveReport(report);
+        if (result && (result as any).offline) {
+          setStatus({ type: 'success', message: 'MODO OFFLINE: Reporte guardado localmente. Se sincronizará al recuperar internet.' });
+        } else {
+          setStatus({ type: 'success', message: 'Reporte procesado y guardado correctamente.' });
+        }
       } catch (err: any) {
         console.error('Supabase error:', err);
         setStatus({ type: 'error', message: `AVISO: No se pudo guardar en Supabase: ${err.message}. El proceso continuará para WhatsApp.` });

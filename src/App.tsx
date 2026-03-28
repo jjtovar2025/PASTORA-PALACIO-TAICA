@@ -8,7 +8,8 @@ import { PatientEntryForm } from './components/PatientEntryForm';
 import { PatientList } from './components/PatientList';
 import { PatientEntry } from './types';
 import { patientsToReport, exportToExcel } from './lib/reportUtils';
-import { saveReport } from './lib/supabase';
+import { saveReport, syncPendingReports } from './lib/supabase';
+import { isOnline } from './lib/offline';
 import { 
   Activity, 
   History, 
@@ -25,7 +26,9 @@ import {
   Users,
   Download,
   ChevronDown,
-  X
+  X,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -33,6 +36,28 @@ function App() {
   const [reports, setReports] = useState<HealthReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history' | 'patients'>('dashboard');
+  const [online, setOnline] = useState(isOnline());
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setOnline(true);
+      syncPendingReports().then(() => loadReports());
+    };
+    const handleOffline = () => setOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial sync check
+    if (isOnline()) {
+      syncPendingReports().then(() => loadReports());
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   const [patients, setPatients] = useState<PatientEntry[]>(() => {
     const saved = localStorage.getItem('health_app_patients');
     return saved ? JSON.parse(saved) : [];
@@ -95,7 +120,10 @@ function App() {
       
       // 1. Save to Supabase
       try {
-        await saveReport(report);
+        const result = await saveReport(report);
+        if (result && (result as any).offline) {
+          alert('MODO OFFLINE: El reporte de cierre se guardó localmente y se sincronizará al recuperar internet.');
+        }
       } catch (err) {
         console.error('Error saving to Supabase:', err);
       }
@@ -200,10 +228,16 @@ function App() {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs font-bold text-slate-400 uppercase">Estado del Sistema</span>
-                <span className={`text-xs font-black flex items-center gap-1 ${isConfigured ? 'text-emerald-500' : 'text-red-500'}`}>
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${isConfigured ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                  {isConfigured ? 'EN LÍNEA' : 'DESCONECTADO'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black flex items-center gap-1 ${isConfigured ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isConfigured ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {isConfigured ? 'DB OK' : 'DB ERROR'}
+                  </span>
+                  <span className={`text-[10px] font-black flex items-center gap-1 ${online ? 'text-blue-500' : 'text-amber-500'}`}>
+                    {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                    {online ? 'CONECTADO' : 'MODO OFFLINE'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

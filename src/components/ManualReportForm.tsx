@@ -270,7 +270,10 @@ Especialista : ${data.header.doctor_specialist}`;
 
       // 1. Save to Supabase
       try {
-        await saveReport(finalReport);
+        const result = await saveReport(finalReport);
+        if (result && (result as any).offline) {
+          alert('MODO OFFLINE: El reporte se guardó localmente y se sincronizará cuando haya internet.');
+        }
       } catch (err: any) {
         console.error('Error saving to Supabase:', err);
         alert(`AVISO: No se pudo guardar en Supabase: ${err.message}. El proceso continuará para WhatsApp.`);

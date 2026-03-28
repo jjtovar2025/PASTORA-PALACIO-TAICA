@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.pastora_palacio_taica.twa",
+    "sha256_cert_fingerprints": ["07:D3:27:E3:0E:29:EF:B7:29:B8:A2:86:67:13:5C:68:12:1A:AC:22:99:4C:51:88:56:88:A2:F7:BF:1F:A1:A2"]
+  }
+}]
