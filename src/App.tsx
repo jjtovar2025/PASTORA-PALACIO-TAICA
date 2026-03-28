@@ -15,7 +15,8 @@ import {
   FileText,
   BrainCircuit,
   Settings,
-  CheckCircle2
+  CheckCircle2,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 

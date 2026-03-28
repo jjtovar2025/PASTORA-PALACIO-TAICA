@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { HealthReport } from "./types";
+import { HealthReport } from "../types";
 
 const SYSTEM_INSTRUCTION = `Rol: Eres un Agente de Inteligencia de Datos para el Centro + Salud "Pastora Palacios Taica". Tu función es procesar reportes de texto clínico y devolver una estructura lista para INSERT en Supabase y APPEND en Google Sheets.
 

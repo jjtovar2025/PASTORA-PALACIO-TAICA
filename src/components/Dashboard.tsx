@@ -79,7 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Atendidos Hoy" value={latestReport.stats.total_patients} icon={Users} color="bg-blue-600" />
-        <StatCard title="Actividades" value={Object.values(latestReport.activities).reduce((a, b) => a + b, 0)} icon={Activity} color="bg-emerald-600" />
+        <StatCard title="Actividades" value={Object.values(latestReport.activities).reduce((a, b) => (a as number) + (b as number), 0)} icon={Activity} color="bg-emerald-600" />
         <StatCard title="Vigilancia" value={Object.values(latestReport.epidemiology).filter(v => typeof v === 'number').reduce((a, b) => (a as number) + (b as number), 0)} icon={ShieldAlert} color="bg-amber-600" />
         <StatCard title="Estado" value={latestReport.epidemiology.status_level} icon={ClipboardCheck} color={latestReport.epidemiology.status_level === 'CRITICAL' ? 'bg-red-600' : latestReport.epidemiology.status_level === 'WARNING' ? 'bg-amber-500' : 'bg-green-600'} />
       </div>
