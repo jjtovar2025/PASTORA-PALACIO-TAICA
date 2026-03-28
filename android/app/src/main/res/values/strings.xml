@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Centro + Salud</string>
+    <string name="title_activity_main">Centro + Salud</string>
+    <string name="package_name">com.pastorapalacio.taica</string>
+    <string name="custom_url_scheme">com.pastorapalacio.taica</string>
+</resources>

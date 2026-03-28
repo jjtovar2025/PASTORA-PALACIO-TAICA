@@ -1,0 +1,9 @@
+{
+	"appId": "com.pastorapalacio.taica",
+	"appName": "Centro + Salud",
+	"webDir": "dist",
+	"server": {
+		"url": "https://pastora-palacio-taica.vercel.app/",
+		"cleartext": true
+	}
+}
