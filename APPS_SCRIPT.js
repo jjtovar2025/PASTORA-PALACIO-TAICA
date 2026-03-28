@@ -65,66 +65,165 @@ function doPost(e) {
 }
 
 /**
- * Run this function manually to migrate existing data from the Sheet to Supabase.
+ * Run this function manually to migrate existing data from ALL sheets to Supabase.
+ * This version is optimized for the "Patient List" format provided by the user.
  */
 function migrateToSupabase() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Morbilidad") || SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  var data = sheet.getDataRange().getValues();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
   
-  // Skip header row
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    if (!row[0]) continue; // Skip empty rows
+  sheets.forEach(function(sheet) {
+    var sheetName = sheet.getName();
+    Logger.log("Procesando hoja: " + sheetName);
     
+    var values = sheet.getDataRange().getValues();
+    var reportDate = "";
+    var doctors = "";
+    var nursingStaff = "";
+    
+    // 1. Extract Header Info
+    for (var i = 0; i < Math.min(values.length, 15); i++) {
+      var rowStr = values[i].join(" ");
+      if (rowStr.includes("FECHA:")) {
+        var match = rowStr.match(/FECHA:\s*(\d{2}\/\d{2}\/\d{4})/);
+        if (match) reportDate = match[1];
+      }
+      if (rowStr.includes("MEDICO DE GUARDIA:")) {
+        doctors = rowStr.split("MEDICO DE GUARDIA:")[1].trim();
+      }
+      if (rowStr.includes("PERSONAL DE ENFERMERIA DE GUARDIA:")) {
+        nursingStaff = rowStr.split("PERSONAL DE ENFERMERIA DE GUARDIA:")[1].trim();
+      }
+    }
+    
+    if (!reportDate) {
+      Logger.log("No se encontró fecha en la hoja " + sheetName + ". Saltando.");
+      return;
+    }
+
+    // 2. Aggregate Patient Data
+    var stats = { total: 0, female: 0, male: 0, general: 0, internal: 0 };
+    var activities = { ta: 0, gl: 0, peso: 0, talla: 0, ev: 0, im: 0, curas: 0 };
+    var epidemiology = { hta: 0, diabetes: 0, ira: 0, fiebre: 0, otros: 0 };
+    var ageGroups = { peds: 0, adults: 0, seniors: 0 };
+
+    // Find table start (usually row with "N°" in first or second column)
+    var tableStartRow = -1;
+    for (var i = 0; i < values.length; i++) {
+      if (values[i][0] === 1 || values[i][0] === "1") {
+        tableStartRow = i;
+        break;
+      }
+    }
+
+    if (tableStartRow === -1) {
+      Logger.log("No se encontró la tabla de pacientes en la hoja " + sheetName);
+      return;
+    }
+
+    for (var i = tableStartRow; i < values.length; i++) {
+      var row = values[i];
+      if (!row[2]) continue; // Skip if no name
+
+      stats.total++;
+      
+      // Sex (M is col 6, F is col 7 in 0-indexed)
+      if (row[6] && row[6].toString().toUpperCase() === "X") stats.male++;
+      if (row[7] && row[7].toString().toUpperCase() === "X") stats.female++;
+
+      // Age Groups (Col 5)
+      var age = parseInt(row[5]);
+      if (!isNaN(age)) {
+        if (age < 18) ageGroups.peds++;
+        else if (age < 60) ageGroups.adults++;
+        else ageGroups.seniors++;
+      }
+
+      // Specialty (Col 20)
+      var spec = (row[20] || "").toString().toUpperCase();
+      if (spec.includes("GENERAL")) stats.general++;
+      if (spec.includes("INTERNA")) stats.internal++;
+
+      // Activities
+      if (row[13]) activities.ta++; // P.A.
+      if (row[14]) activities.gl++; // Gl
+      if (row[8]) activities.peso++; // Peso
+      if (row[9]) activities.talla++; // Talla
+      
+      var tto = (row[22] || "").toString().toUpperCase();
+      if (tto.includes("E.V") || tto.includes("EV")) activities.ev++;
+      if (tto.includes("I.M") || tto.includes("IM")) activities.im++;
+      if (tto.includes("CURA")) activities.curas++;
+
+      // Epidemiology (Col 21 - Diagnóstico)
+      var dx = (row[21] || "").toString().toUpperCase();
+      if (dx.includes("HTA") || dx.includes("HIPERTEN")) epidemiology.hta++;
+      if (dx.includes("DIABETES")) epidemiology.diabetes++;
+      if (dx.includes("IRA") || dx.includes("ASMA") || dx.includes("GRIPE")) epidemiology.ira++;
+      if (dx.includes("FIEBRE") || dx.includes("DENGUE")) epidemiology.fiebre++;
+    }
+
+    // 3. Construct Report Object
     var report = {
       header: {
-        date: formatDate(row[0]),
-        day: row[1],
-        staff_enfermeria: row[2],
-        doctor_general: (row[3] || "").split(",")[0] || "",
-        doctor_specialist: (row[3] || "").split(",")[1] || ""
+        date: formatDate(reportDate),
+        day: getDayName(reportDate),
+        staff_enfermeria: nursingStaff || "Jexury Rio",
+        doctor_general: doctors.split(".")[0] || "Lesther Rivas",
+        doctor_specialist: doctors.split(".")[1] || "Eli Marrero"
       },
       stats: {
-        total_patients: Number(row[5] || 0),
-        female: Number(row[6] || 0),
-        male: Number(row[7] || 0),
-        med_general: Number(row[8] || 0),
-        med_interna: Number(row[9] || 0),
+        total_patients: stats.total,
+        female: stats.female,
+        male: stats.male,
+        med_general: stats.general,
+        med_interna: stats.internal,
         emergencia: 0, pediatria: 0, geriatria: 0, ginecologia: 0, prenatal: 0
       },
       activities: {
-        ta_control: Number(row[11] || 0),
-        glicemia: Number(row[12] || 0),
-        peso: Number(row[13] || 0),
-        talla: Number(row[14] || 0),
-        tto_ev: Number(row[15] || 0),
-        tto_im: Number(row[16] || 0),
-        curas: Number(row[17] || 0),
+        ta_control: activities.ta,
+        glicemia: activities.gl,
+        peso: activities.peso,
+        talla: activities.talla,
+        tto_ev: activities.ev,
+        tto_im: activities.im,
+        curas: activities.curas,
         nebulizaciones: 0, suturas: 0, retiro_puntos: 0, sondas: 0
       },
       age_groups: {
-        lactante_0_2: 0, preescolar_3_5: 0, escolar_6_11: 0, adolescente_12_17: Number(row[19] || 0),
-        adulto_joven_18_29: 0, adulto_30_59: Number(row[20] || 0),
-        adulto_mayor_60: Number(row[21] || 0)
+        lactante_0_2: 0, preescolar_3_5: 0, escolar_6_11: 0, adolescente_12_17: ageGroups.peds,
+        adulto_joven_18_29: 0, adulto_30_59: ageGroups.adults,
+        adulto_mayor_60: ageGroups.seniors
       },
       references: { ambulancia_mas_salud: 0, propios_medios: 0 },
       epidemiology: {
-        cardiovascular: Number(row[22] || 0),
-        diabetes: Number(row[23] || 0),
-        ira: Number(row[24] || 0),
-        asma: 0, embarazada: 0, covid_19: 0, fiebre: Number(row[25] || 0), dengue: 0, zika: 0, chicungunya: 0, varicela: 0, rubeola: 0, sarampion: 0, h1n1: 0, mordeduras_canina: 0, diarreas: 0, amigdalitis: 0, hipertension: 0, otros: 0,
-        status_level: row[4] || "STABLE"
+        cardiovascular: epidemiology.hta,
+        diabetes: epidemiology.diabetes,
+        ira: epidemiology.ira,
+        asma: 0, embarazada: 0, covid_19: 0, fiebre: epidemiology.fiebre, dengue: 0, zika: 0, chicungunya: 0, varicela: 0, rubeola: 0, sarampion: 0, h1n1: 0, mordeduras_canina: 0, diarreas: 0, amigdalitis: 0, hipertension: epidemiology.hta, otros: 0,
+        status_level: epidemiology.hta > 3 ? "CRITICAL" : "STABLE"
       },
-      whatsapp_summary: "Migración histórica"
+      whatsapp_summary: "Migración automática desde hoja: " + sheetName
     };
     
     sendToSupabase(report);
-  }
+  });
+}
+
+function getDayName(dateStr) {
+  var parts = dateStr.split("/");
+  var date = new Date(parts[2], parts[1] - 1, parts[0]);
+  var days = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"];
+  return days[date.getDay()];
 }
 
 function formatDate(date) {
   if (date instanceof Date) {
     return Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  if (typeof date === "string" && date.includes("/")) {
+    var parts = date.split("/");
+    return parts[2] + "-" + parts[1] + "-" + parts[0];
   }
   return date;
 }
