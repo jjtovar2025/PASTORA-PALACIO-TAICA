@@ -10,7 +10,10 @@ import {
   Users,
   Stethoscope,
   Calendar as CalendarIcon,
-  ChevronRight
+  ChevronRight,
+  Loader2,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { HealthReport } from './types';
 import { getReports } from './lib/supabase';
@@ -28,11 +31,13 @@ export default function App() {
   }, []);
 
   const loadReports = async () => {
+    setLoading(true);
     try {
       const data = await getReports();
-      // Supabase returns raw rows, we need the 'data' field which is our HealthReport
-      const formattedReports = data.map((r: any) => r.data as HealthReport);
-      setReports(formattedReports);
+      if (data && Array.isArray(data)) {
+        const formattedReports = data.map((r: any) => r.data as HealthReport);
+        setReports(formattedReports);
+      }
     } catch (err) {
       console.error('Error loading reports:', err);
     } finally {
@@ -56,6 +61,17 @@ export default function App() {
 
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
   const hasAppsScript = !!import.meta.env.VITE_APPS_SCRIPT_URL;
+
+  if (loading && reports.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-slate-500 font-medium">Cargando datos del Centro + Salud...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
