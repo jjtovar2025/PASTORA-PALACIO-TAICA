@@ -207,7 +207,16 @@ function App() {
 
                 {activeTab === 'history' && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-black text-slate-900">Libro de Morbilidad</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-black text-slate-900">Libro de Morbilidad</h2>
+                      <button 
+                        onClick={loadReports}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <Activity className="w-3 h-3" />
+                        ACTUALIZAR
+                      </button>
+                    </div>
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -217,31 +226,50 @@ function App() {
                               <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Día</th>
                               <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Atendidos</th>
                               <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Alerta</th>
-                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Responsable</th>
+                              <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">Acciones</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {reports.map((report, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50 transition-colors group">
-                                <td className="px-6 py-4 font-bold text-slate-700">{report.header.date}</td>
-                                <td className="px-6 py-4 font-bold text-slate-500">{report.header.day}</td>
-                                <td className="px-6 py-4">
-                                  <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-black text-sm">
-                                    {report.stats.total_patients}
-                                  </span>
+                            {reports.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium">
+                                  No hay reportes registrados aún.
                                 </td>
-                                <td className="px-6 py-4">
-                                  <span className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-tighter ${
-                                    report.epidemiology.status_level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
-                                    report.epidemiology.status_level === 'WARNING' ? 'bg-amber-100 text-amber-700' :
-                                    'bg-emerald-100 text-emerald-700'
-                                  }`}>
-                                    {report.epidemiology.status_level}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 text-slate-500 font-medium">{report.header.staff_enfermeria}</td>
                               </tr>
-                            ))}
+                            ) : (
+                              reports.map((report, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50 transition-colors group">
+                                  <td className="px-6 py-4 font-bold text-slate-700">{report.header.date}</td>
+                                  <td className="px-6 py-4 font-bold text-slate-500">{report.header.day}</td>
+                                  <td className="px-6 py-4">
+                                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-black text-sm">
+                                      {report.stats.total_patients}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-tighter ${
+                                      report.epidemiology.status_level === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                                      report.epidemiology.status_level === 'WARNING' ? 'bg-amber-100 text-amber-700' :
+                                      'bg-emerald-100 text-emerald-700'
+                                    }`}>
+                                      {report.epidemiology.status_level}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <button
+                                      onClick={() => {
+                                        const encodedText = encodeURIComponent(report.whatsapp_summary);
+                                        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+                                      }}
+                                      className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-xl font-bold text-xs hover:bg-green-600 hover:text-white transition-all"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5" />
+                                      REENVIAR
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
