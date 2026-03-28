@@ -1,0 +1,5 @@
+{
+  "name": "Centro + Salud - Gestión de Morbilidad",
+  "description": "Sistema de extracción de datos de reportes de WhatsApp para el Centro + Salud 'Pastora Palacios Taica', con integración a Google Sheets y Supabase.",
+  "requestFramePermissions": []
+}
