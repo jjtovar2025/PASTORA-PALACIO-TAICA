@@ -25,6 +25,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history'>('dashboard');
   const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
   const [error, setError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -52,6 +53,7 @@ function App() {
   };
 
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const isAIScriptConfigured = !!import.meta.env.VITE_APPS_SCRIPT_URL;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans">
@@ -66,26 +68,32 @@ function App() {
         <div className="flex md:flex-col gap-8 md:gap-6">
           <NavButton 
             active={activeTab === 'dashboard'} 
-            onClick={() => setActiveTab('dashboard')} 
+            onClick={() => { setActiveTab('dashboard'); setShowSettings(false); }} 
             icon={LayoutDashboard} 
             label="Panel" 
           />
           <NavButton 
             active={activeTab === 'new'} 
-            onClick={() => setActiveTab('new')} 
+            onClick={() => { setActiveTab('new'); setShowSettings(false); }} 
             icon={PlusCircle} 
             label="Nuevo" 
           />
           <NavButton 
             active={activeTab === 'history'} 
-            onClick={() => setActiveTab('history')} 
+            onClick={() => { setActiveTab('history'); setShowSettings(false); }} 
             icon={History} 
             label="Libro" 
+          />
+          <NavButton 
+            active={showSettings} 
+            onClick={() => setShowSettings(!showSettings)} 
+            icon={Settings} 
+            label="Ajustes" 
           />
         </div>
 
         <div className="hidden md:flex mt-auto">
-          <NavButton active={false} onClick={() => {}} icon={Settings} label="Ajustes" />
+          {/* Espacio reservado */}
         </div>
       </nav>
 
@@ -100,9 +108,9 @@ function App() {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs font-bold text-slate-400 uppercase">Estado del Sistema</span>
-                <span className="text-xs font-black text-emerald-500 flex items-center gap-1">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  EN LÍNEA
+                <span className={`text-xs font-black flex items-center gap-1 ${isConfigured ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${isConfigured ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  {isConfigured ? 'EN LÍNEA' : 'DESCONECTADO'}
                 </span>
               </div>
             </div>
@@ -110,13 +118,62 @@ function App() {
         </header>
 
         <div className="max-w-7xl mx-auto p-6">
-          {!isConfigured && (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl mb-8 flex items-center gap-4">
-              <AlertCircle className="text-amber-600 w-6 h-6" />
-              <p className="text-amber-800 text-sm font-medium">
-                <b>Configuración Pendiente:</b> Faltan las llaves de Supabase en los Secrets. El Dashboard no mostrará datos reales hasta que se configuren.
-              </p>
-            </div>
+          {showSettings && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white border border-slate-200 p-8 rounded-3xl shadow-xl mb-8"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black text-slate-900">Configuración del Sistema</h2>
+                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600">
+                  <PlusCircle className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Base de Datos (Supabase)</h3>
+                  <div className={`p-4 rounded-2xl border ${isConfigured ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                    <div className="flex items-center gap-3">
+                      {isConfigured ? <CheckCircle2 className="text-emerald-500" /> : <AlertCircle className="text-red-500" />}
+                      <div>
+                        <p className={`font-bold ${isConfigured ? 'text-emerald-900' : 'text-red-900'}`}>
+                          {isConfigured ? 'Conectado a Supabase' : 'Faltan credenciales'}
+                        </p>
+                        <p className="text-xs text-slate-500">Permite guardar y ver el historial en la app.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Exportación (Google Sheets)</h3>
+                  <div className={`p-4 rounded-2xl border ${isAIScriptConfigured ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                    <div className="flex items-center gap-3">
+                      {isAIScriptConfigured ? <CheckCircle2 className="text-emerald-500" /> : <AlertCircle className="text-amber-500" />}
+                      <div>
+                        <p className={`font-bold ${isAIScriptConfigured ? 'text-emerald-900' : 'text-amber-900'}`}>
+                          {isAIScriptConfigured ? 'Conectado a Sheets' : 'URL de Script no configurada'}
+                        </p>
+                        <p className="text-xs text-slate-500">Permite enviar los datos al libro de Excel.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!isConfigured && (
+                <div className="mt-8 p-4 bg-slate-100 rounded-2xl">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    <b>Instrucciones:</b> Para activar el sistema, ve al menú de <b>Settings > Secrets</b> de este editor y agrega:
+                    <br />1. <code className="bg-white px-1 rounded">VITE_SUPABASE_URL</code>
+                    <br />2. <code className="bg-white px-1 rounded">VITE_SUPABASE_ANON_KEY</code>
+                    <br />3. <code className="bg-white px-1 rounded">VITE_APPS_SCRIPT_URL</code>
+                  </p>
+                </div>
+              )}
+            </motion.div>
           )}
 
           <AnimatePresence mode="wait">
