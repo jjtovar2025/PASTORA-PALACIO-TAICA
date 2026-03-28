@@ -166,7 +166,7 @@ function App() {
               {!isConfigured && (
                 <div className="mt-8 p-4 bg-slate-100 rounded-2xl">
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    <b>Instrucciones:</b> Para activar el sistema, ve al menú de <b>Settings > Secrets</b> de este editor y agrega:
+                    <b>Instrucciones:</b> Para activar el sistema, ve al menú de <b>Settings &gt; Secrets</b> de este editor y agrega:
                     <br />1. <code className="bg-white px-1 rounded">VITE_SUPABASE_URL</code>
                     <br />2. <code className="bg-white px-1 rounded">VITE_SUPABASE_ANON_KEY</code>
                     <br />3. <code className="bg-white px-1 rounded">VITE_APPS_SCRIPT_URL</code>
