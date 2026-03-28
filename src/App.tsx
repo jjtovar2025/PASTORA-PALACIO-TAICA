@@ -155,7 +155,7 @@ export default function App() {
       {/* Main Content */}
       <main className="lg:ml-64 p-4 md:p-8">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
+          <div id="app-header-content">
             <h2 className="text-2xl font-bold text-slate-900">
               {activeTab === 'dashboard' && 'Panel de Control'}
               {activeTab === 'reports' && 'Historial de Reportes'}
@@ -166,21 +166,15 @@ export default function App() {
 
           {reports.length > 0 && (
             <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-2xl border border-slate-200 shadow-sm">
-              <div className={cn("w-3 h-3 rounded-full animate-pulse", getSemaforoColor(reports[0].registro.semaforo))} />
+              <div className={cn("w-3 h-3 rounded-full", getSemaforoColor(reports[0].registro.semaforo))} />
               <span className="text-sm font-bold text-slate-700">Estado: {reports[0].registro.semaforo}</span>
             </div>
           )}
         </header>
 
-        <AnimatePresence mode="wait">
+        <div className="tab-content">
           {activeTab === 'dashboard' && (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
+            <div className="space-y-6">
               {/* Quick Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard 
@@ -211,17 +205,11 @@ export default function App() {
               </div>
 
               <Dashboard reports={reports} />
-            </motion.div>
+            </div>
           )}
 
           {activeTab === 'reports' && (
-            <motion.div
-              key="reports"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
-            >
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-bottom border-slate-200">
@@ -265,21 +253,15 @@ export default function App() {
                   )}
                 </tbody>
               </table>
-            </motion.div>
+            </div>
           )}
 
           {activeTab === 'new' && (
-            <motion.div
-              key="new"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-2xl mx-auto"
-            >
+            <div className="max-w-2xl mx-auto">
               <ReportForm onSuccess={handleNewReport} />
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </main>
 
       {/* Mobile Nav */}

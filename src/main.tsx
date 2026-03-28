@@ -4,6 +4,11 @@ import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
 
+// Polyfill para evitar errores de 'process is not defined' en producción
+if (typeof window !== 'undefined') {
+  (window as any).process = { env: {} };
+}
+
 window.onerror = function(message, source, lineno, colno, error) {
   console.error("Global Error:", message, error);
 };
