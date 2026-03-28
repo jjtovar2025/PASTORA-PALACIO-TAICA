@@ -55,6 +55,7 @@ export default function App() {
   };
 
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const hasAppsScript = !!import.meta.env.VITE_APPS_SCRIPT_URL;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
@@ -64,20 +65,25 @@ export default function App() {
             <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-6">
               <Settings className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Configuración Requerida</h3>
+            <h3 className="text-xl font-bold mb-2">Conexión Pendiente</h3>
             <p className="text-slate-600 mb-6">
-              Para habilitar el guardado en Supabase y Google Sheets, configure las variables de entorno en el panel de <b>Secrets</b>.
+              Detectamos que faltan las llaves de <b>Supabase</b>. Agrégalas en el panel de Secrets para activar el Dashboard.
             </p>
-            <div className="space-y-3 mb-8">
-              <code className="block p-2 bg-slate-50 rounded text-xs text-slate-500">VITE_SUPABASE_URL</code>
-              <code className="block p-2 bg-slate-50 rounded text-xs text-slate-500">VITE_SUPABASE_ANON_KEY</code>
-              <code className="block p-2 bg-slate-50 rounded text-xs text-slate-500">VITE_APPS_SCRIPT_URL</code>
+            <div className="space-y-2 mb-8">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Supabase</span>
+                {isConfigured ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
+              </div>
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Google Sheets</span>
+                {hasAppsScript ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
+              </div>
             </div>
             <button 
               onClick={() => setActiveTab('new')}
               className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all"
             >
-              Probar Procesador de IA
+              Ir al Procesador de IA
             </button>
           </div>
         </div>
