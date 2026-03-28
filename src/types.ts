@@ -1,3 +1,15 @@
+export interface PatientEntry {
+  id: string;
+  timestamp: string;
+  name: string;
+  age: number;
+  gender: 'Femenino' | 'Masculino';
+  service: 'Medicina General' | 'Emergencia' | 'Pediatría' | 'Geriatría' | 'Medicina Interna' | 'Ginecología' | 'Prenatal' | 'Enfermería';
+  activities: string[];
+  programs: string[];
+  reference?: 'Ambulancia' | 'Propios Medios';
+}
+
 export interface HealthReport {
   id?: string;
   created_at?: string;

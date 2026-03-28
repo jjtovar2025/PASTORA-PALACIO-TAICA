@@ -1,12 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { HealthReport } from '../types';
 import { saveReport } from '../lib/supabase';
-import { Loader2, Send, MessageSquare, Save, User, Activity, Users, ShieldAlert, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  User, 
+  Users, 
+  Activity, 
+  ShieldAlert, 
+  ChevronDown, 
+  ChevronUp, 
+  Send, 
+  Loader2,
+  CheckCircle2,
+  MessageSquare,
+  Plus
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface ManualReportFormProps {
   onSuccess: (report: HealthReport) => void;
   phoneNumbers: string[];
 }
+
+const SectionHeader = React.memo(({ id, activeSection, setActiveSection, title, icon: Icon }: { id: string, activeSection: string, setActiveSection: (id: string) => void, title: string, icon: any }) => (
+  <button
+    type="button"
+    onClick={() => setActiveSection(activeSection === id ? '' : id)}
+    className={`w-full flex items-center justify-between p-4 rounded-xl transition-all mb-2 ${
+      activeSection === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <Icon className="w-5 h-5" />
+      <span className="font-bold">{title}</span>
+    </div>
+    {activeSection === id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+  </button>
+));
+
+const InputField = React.memo(({ label, section, field, formData, handleInputChange, type = "number", placeholder = "" }: any) => {
+  const value = (formData as any)[section][field];
+  
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-semibold text-gray-500 uppercase ml-1">{label}</label>
+      <input
+        type={type === "number" ? "text" : type}
+        inputMode={type === "number" ? "numeric" : undefined}
+        value={value}
+        onChange={(e) => {
+          let val: any = e.target.value;
+          if (type === "number") {
+            // Allow empty string while typing, but convert to number for state if it's a valid number
+            // Actually, keeping it as string in state might be safer for focus, 
+            // but the rest of the app expects numbers.
+            // Let's just filter non-numeric chars if it's supposed to be a number
+            val = val.replace(/[^0-9]/g, '');
+            handleInputChange(section, field, parseInt(val) || 0);
+          } else {
+            handleInputChange(section, field, val);
+          }
+        }}
+        placeholder={placeholder}
+        className="p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
+      />
+    </div>
+  );
+});
 
 export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, phoneNumbers }) => {
   const [loading, setLoading] = useState(false);
@@ -125,22 +184,21 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
     const pad = (n: number) => n.toString().padStart(2, '0');
     
     return `Morbilidad diaria 
-*Centro + Salud. Pastora Palacios Taica*
-*Fecha:* ${data.header.date.split('-').reverse().join('/')}
-*Día:* ${data.header.day}
+*Centro + Salud. Pastora Palacios Taica 
+*Fecha:*${data.header.date.split('-').reverse().join('/')}*
+*Día: *${data.header.day}*
 
-*1. Pacientes Atendidos: ${data.stats.total_patients}*
-Femenino: ${pad(data.stats.female)}
+*1. Pacientes Atendidos: ${data.stats.total_patients}
+Femenino : ${pad(data.stats.female)}
 Masculino: ${pad(data.stats.male)}
 Medicina General: ${pad(data.stats.med_general)}
-Emergencia: ${pad(data.stats.emergencia)}
+ Emergencia: ${pad(data.stats.emergencia)}
 Pediatría: ${pad(data.stats.pediatria)}
 Geriatría: ${pad(data.stats.geriatria)}
-Medicina Interna: ${pad(data.stats.med_interna)}
-Ginecología: ${pad(data.stats.ginecologia)}
+Medicina Interna:${pad(data.stats.med_interna)}
+Ginecologia:${pad(data.stats.ginecologia)}
 Prenatal: ${pad(data.stats.prenatal)}
 Enfermería:
-
 *2. Por Actividades*
 ▪️Control de T/A: ${pad(data.activities.ta_control)}
 ▪️Control de: glicemia:${pad(data.activities.glicemia)}
@@ -156,9 +214,9 @@ Enfermería:
 ▪️Curas: ${pad(data.activities.curas)}
 ➖Suturas: ${pad(data.activities.suturas)}
 --Retiro de puntos: ${pad(data.activities.retiro_puntos)}
-_Sondas: ${pad(data.activities.sondas)}.      
+_Sondas: ${pad(data.activities.sondas)}
  -Lavado ocular : ${pad(data.activities.lavado_ocular)} 
--Lavado nasal: ${pad(data.activities.lavado_nasal)}
+ -Lavado nasal: ${pad(data.activities.lavado_nasal)}
  - Lavado de oidos:${pad(data.activities.lavado_oidos)}
  _Electros: ${pad(data.activities.electros)}
 ▪️Visitas domiciliares: ${pad(data.activities.visitas_domiciliares)}
@@ -170,14 +228,13 @@ _Sondas: ${pad(data.activities.sondas)}.
 ➖Lactante 0 a 2 años : ${pad(data.age_groups.lactante_0_2)}
 ➖Preescolar 3 a 5 años : ${pad(data.age_groups.preescolar_3_5)}
 ➖Escolares 6 a 11 años: ${pad(data.age_groups.escolar_6_11)}
-➖Adolescentes 12 a 17 años: ${pad(data.age_groups.adolescente_12_17)}
-➖Adulto joven 18 a 29 años: ${pad(data.age_groups.adulto_joven_18_29)}
-➖Adulto 30 a 59 años: ${pad(data.age_groups.adulto_30_59)}
-➖Adulto mayor 60 y más: ${pad(data.age_groups.adulto_mayor_60)}
+➖Adolescente 12 a 18: ${pad(data.age_groups.adolescente_12_17)}
+➖Adulto 19 a 59 años: ${pad(data.age_groups.adulto_joven_18_29 + data.age_groups.adulto_30_59)}
+➖Adulto mayor 60 años o más: ${pad(data.age_groups.adulto_mayor_60)}
 
 ▪️ Referencia de casos: ${pad(data.references.ambulancia_mas_salud + data.references.propios_medios)}
 Por Ambulancia de Más salud: ${pad(data.references.ambulancia_mas_salud)}
-Por sus propios medios: ${pad(data.references.propios_medios)}
+ Por sus propios medios: ${pad(data.references.propios_medios)}
 
 *4- Por Programa de Salud*
 ▪️ Cardiovascular: ${pad(data.epidemiology.cardiovascular)}
@@ -186,8 +243,8 @@ Por sus propios medios: ${pad(data.references.propios_medios)}
 ▪️IRA: ${pad(data.epidemiology.ira)}
 ▪️ Embarazada: ${pad(data.epidemiology.embarazada)}
 ▪️Casos sospechoso de COVID-19 😷: ${pad(data.epidemiology.covid_19)}
-▪️ Fiebre: ${pad(data.epidemiology.fiebre)}
-Dengue: ${pad(data.epidemiology.dengue)}
+▪️ Fiebre ${pad(data.epidemiology.fiebre)}
+ Dengue: ${pad(data.epidemiology.dengue)}
 ▪️ Fiebre 🦟 Zika: ${pad(data.epidemiology.zika)}
 ▪️Fiebre 🦟 Chicungunya: ${pad(data.epidemiology.chicungunya)}
 ▪️Casos de Varicela: ${pad(data.epidemiology.varicela)}
@@ -195,14 +252,10 @@ Dengue: ${pad(data.epidemiology.dengue)}
 ▪️Casos de Sarampión: ${pad(data.epidemiology.sarampion)}
 ▪️Casos de H1N1: ${pad(data.epidemiology.h1n1)}
 ▪️Casos de mordeduras canina: ${pad(data.epidemiology.mordeduras_canina)}
-▪️Diarreas: ${pad(data.epidemiology.diarreas)}
-▪️Amigdalitis: ${pad(data.epidemiology.amigdalitis)}
-▪️Hipertensión: ${pad(data.epidemiology.hipertension)}
-▪️Otros: ${pad(data.epidemiology.otros)}
 
-▪️💉 *Responsables del Reporte:* ${data.header.staff_enfermeria}
+▪️💉 *Responsables del Reporte : ${data.header.staff_enfermeria}
 Consulta Médico General: ${data.header.doctor_general}
-Especialista: ${data.header.doctor_specialist}`;
+Especialista : ${data.header.doctor_specialist}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,215 +304,182 @@ Especialista: ${data.header.doctor_specialist}`;
     }
   };
 
-  const SectionHeader = ({ id, title, icon: Icon }: { id: string, title: string, icon: any }) => (
-    <button
-      type="button"
-      onClick={() => setActiveSection(activeSection === id ? '' : id)}
-      className={`w-full flex items-center justify-between p-4 rounded-xl transition-all mb-2 ${
-        activeSection === id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5" />
-        <span className="font-bold">{title}</span>
-      </div>
-      {activeSection === id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-    </button>
-  );
+  const sendWhatsApp = (phone: string) => {
+    if (!lastReport) return;
+    const text = encodeURIComponent(lastReport.whatsapp_summary);
+    const cleanPhone = phone.replace(/\+/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+  };
 
-  const InputField = ({ label, section, field, type = "number", placeholder = "" }: any) => (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-gray-500 uppercase ml-1">{label}</label>
-      <input
-        type={type}
-        value={(formData as any)[section][field]}
-        onChange={(e) => handleInputChange(section, field, type === "number" ? parseInt(e.target.value) || 0 : e.target.value)}
-        placeholder={placeholder}
-        className="p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
-      />
-    </div>
-  );
+  const sendToOther = () => {
+    if (!lastReport) return;
+    const text = encodeURIComponent(lastReport.whatsapp_summary);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto">
-      {/* HEADER */}
-      <SectionHeader id="header" title="Encabezado y Personal" icon={User} />
-      {activeSection === 'header' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2">
-          <InputField label="Fecha" section="header" field="date" type="date" />
-          <InputField label="Día" section="header" field="day" type="text" />
-          <InputField label="Responsable Enfermería" section="header" field="staff_enfermeria" type="text" placeholder="Ej: JEXURY RIO" />
-          <InputField label="Médico General" section="header" field="doctor_general" type="text" placeholder="Ej: Dr. Lesther Rivas" />
-          <InputField label="Especialista" section="header" field="doctor_specialist" type="text" placeholder="Ej: Dr. Eli Marrero" />
-        </div>
-      )}
-
-      {/* STATS */}
-      <SectionHeader id="stats" title="Pacientes Atendidos" icon={Users} />
-      {activeSection === 'stats' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="col-span-2 md:col-span-3 bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
-            <span className="font-bold text-blue-800">TOTAL ATENDIDOS:</span>
-            <span className="text-2xl font-black text-blue-600">{formData.stats?.total_patients}</span>
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl mx-auto">
+        {/* HEADER */}
+        <SectionHeader id="header" activeSection={activeSection} setActiveSection={setActiveSection} title="Encabezado y Personal" icon={User} />
+        {activeSection === 'header' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <InputField label="Fecha" section="header" field="date" formData={formData} handleInputChange={handleInputChange} type="date" />
+            <InputField label="Día" section="header" field="day" formData={formData} handleInputChange={handleInputChange} type="text" />
+            <InputField label="Responsable Enfermería" section="header" field="staff_enfermeria" formData={formData} handleInputChange={handleInputChange} type="text" placeholder="Ej: JEXURY RIO" />
+            <InputField label="Médico General" section="header" field="doctor_general" formData={formData} handleInputChange={handleInputChange} type="text" placeholder="Ej: Dr. Lesther Rivas" />
+            <InputField label="Especialista" section="header" field="doctor_specialist" formData={formData} handleInputChange={handleInputChange} type="text" placeholder="Ej: Dr. Eli Marrero" />
           </div>
-          <InputField label="Femenino" section="stats" field="female" />
-          <InputField label="Masculino" section="stats" field="male" />
-          <InputField label="Medicina General" section="stats" field="med_general" />
-          <InputField label="Emergencia" section="stats" field="emergencia" />
-          <InputField label="Pediatría" section="stats" field="pediatria" />
-          <InputField label="Geriatría" section="stats" field="geriatria" />
-          <InputField label="Medicina Interna" section="stats" field="med_interna" />
-          <InputField label="Ginecología" section="stats" field="ginecologia" />
-          <InputField label="Prenatal" section="stats" field="prenatal" />
-        </div>
-      )}
+        )}
 
-      {/* ACTIVITIES */}
-      <SectionHeader id="activities" title="Actividades de Enfermería" icon={Activity} />
-      {activeSection === 'activities' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <InputField label="Control T/A" section="activities" field="ta_control" />
-          <InputField label="Glicemia" section="activities" field="glicemia" />
-          <InputField label="Peso" section="activities" field="peso" />
-          <InputField label="Talla" section="activities" field="talla" />
-          <InputField label="Tto E/V" section="activities" field="tto_ev" />
-          <InputField label="Tto I/M" section="activities" field="tto_im" />
-          <InputField label="Tto S/L" section="activities" field="tto_sl" />
-          <InputField label="Tto V/O" section="activities" field="tto_vo" />
-          <InputField label="Tto S/C" section="activities" field="tto_sc" />
-          <InputField label="Tto Protocolo" section="activities" field="tto_protocolo" />
-          <InputField label="Nebulizaciones" section="activities" field="nebulizaciones" />
-          <InputField label="Curas" section="activities" field="curas" />
-          <InputField label="Suturas" section="activities" field="suturas" />
-          <InputField label="Retiro Puntos" section="activities" field="retiro_puntos" />
-          <InputField label="Sondas" section="activities" field="sondas" />
-          <InputField label="Lavado Ocular" section="activities" field="lavado_ocular" />
-          <InputField label="Lavado Nasal" section="activities" field="lavado_nasal" />
-          <InputField label="Lavado Oídos" section="activities" field="lavado_oidos" />
-          <InputField label="Electros" section="activities" field="electros" />
-          <InputField label="Visitas Dom." section="activities" field="visitas_domiciliares" />
-          <InputField label="Jornadas" section="activities" field="jornadas_especiales" />
-          <InputField label="Ayudas" section="activities" field="entregas_ayudas" />
-          <InputField label="Vacunas" section="activities" field="vacunas_rutina" />
-        </div>
-      )}
-
-      {/* AGE GROUPS */}
-      <SectionHeader id="age" title="Grupo Etario" icon={Users} />
-      {activeSection === 'age' && (
-        <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <InputField label="Lactante (0-2)" section="age_groups" field="lactante_0_2" />
-          <InputField label="Preescolar (3-5)" section="age_groups" field="preescolar_3_5" />
-          <InputField label="Escolar (6-11)" section="age_groups" field="escolar_6_11" />
-          <InputField label="Adolescente (12-17)" section="age_groups" field="adolescente_12_17" />
-          <InputField label="Adulto Joven (18-29)" section="age_groups" field="adulto_joven_18_29" />
-          <InputField label="Adulto (30-59)" section="age_groups" field="adulto_30_59" />
-          <InputField label="Adulto Mayor (60+)" section="age_groups" field="adulto_mayor_60" />
-        </div>
-      )}
-
-      {/* EPIDEMIOLOGY */}
-      <SectionHeader id="epi" title="Vigilancia Epidemiológica" icon={ShieldAlert} />
-      {activeSection === 'epi' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <InputField label="Cardiovascular" section="epidemiology" field="cardiovascular" />
-          <InputField label="Diabetes" section="epidemiology" field="diabetes" />
-          <InputField label="Asma" section="epidemiology" field="asma" />
-          <InputField label="IRA" section="epidemiology" field="ira" />
-          <InputField label="Embarazada" section="epidemiology" field="embarazada" />
-          <InputField label="COVID-19" section="epidemiology" field="covid_19" />
-          <InputField label="Fiebre" section="epidemiology" field="fiebre" />
-          <InputField label="Dengue" section="epidemiology" field="dengue" />
-          <InputField label="Zika" section="epidemiology" field="zika" />
-          <InputField label="Chicungunya" section="epidemiology" field="chicungunya" />
-          <InputField label="Varicela" section="epidemiology" field="varicela" />
-          <InputField label="Rubeola" section="epidemiology" field="rubeola" />
-          <InputField label="Sarampión" section="epidemiology" field="sarampion" />
-          <InputField label="H1N1" section="epidemiology" field="h1n1" />
-          <InputField label="Mordedura Canina" section="epidemiology" field="mordeduras_canina" />
-          <InputField label="Diarreas" section="epidemiology" field="diarreas" />
-          <InputField label="Amigdalitis" section="epidemiology" field="amigdalitis" />
-          <InputField label="Hipertensión" section="epidemiology" field="hipertension" />
-          <InputField label="Otros" section="epidemiology" field="otros" />
-          
-          <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
-            <label className="text-xs font-semibold text-gray-500 uppercase ml-1">Estado Alerta</label>
-            <select
-              value={formData.epidemiology?.status_level}
-              onChange={(e) => handleInputChange('epidemiology', 'status_level', e.target.value)}
-              className="p-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
-            >
-              <option value="STABLE">🟢 ESTABLE</option>
-              <option value="WARNING">🟡 ADVERTENCIA</option>
-              <option value="CRITICAL">🔴 CRÍTICO</option>
-            </select>
+        {/* STATS */}
+        <SectionHeader id="stats" activeSection={activeSection} setActiveSection={setActiveSection} title="Pacientes Atendidos" icon={Users} />
+        {activeSection === 'stats' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div className="col-span-2 md:col-span-3 bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center">
+              <span className="font-bold text-blue-800">TOTAL ATENDIDOS:</span>
+              <span className="text-2xl font-black text-blue-600">{formData.stats?.total_patients}</span>
+            </div>
+            <InputField label="Femenino" section="stats" field="female" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Masculino" section="stats" field="male" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Medicina General" section="stats" field="med_general" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Emergencia" section="stats" field="emergencia" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Pediatría" section="stats" field="pediatria" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Geriatría" section="stats" field="geriatria" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Medicina Interna" section="stats" field="med_interna" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Ginecología" section="stats" field="ginecologia" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Prenatal" section="stats" field="prenatal" formData={formData} handleInputChange={handleInputChange} />
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="pt-6">
-        {showWhatsAppOptions && lastReport ? (
-          <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl animate-in zoom-in-95 duration-300">
-            <h3 className="text-emerald-900 font-black text-center mb-4 uppercase tracking-widest text-sm">¡Reporte Guardado! Enviar a:</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {phoneNumbers.map((phone, idx) => (
+        {/* ACTIVITIES */}
+        <SectionHeader id="activities" activeSection={activeSection} setActiveSection={setActiveSection} title="Actividades de Enfermería" icon={Activity} />
+        {activeSection === 'activities' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <InputField label="Control T/A" section="activities" field="ta_control" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Glicemia" section="activities" field="glicemia" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Peso" section="activities" field="peso" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Talla" section="activities" field="talla" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto E/V" section="activities" field="tto_ev" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto I/M" section="activities" field="tto_im" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto S/L" section="activities" field="tto_sl" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto V/O" section="activities" field="tto_vo" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto S/C" section="activities" field="tto_sc" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Tto Protocolo" section="activities" field="tto_protocolo" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Nebulizaciones" section="activities" field="nebulizaciones" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Curas" section="activities" field="curas" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Suturas" section="activities" field="suturas" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Retiro Puntos" section="activities" field="retiro_puntos" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Sondas" section="activities" field="sondas" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Lavado Ocular" section="activities" field="lavado_ocular" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Lavado Nasal" section="activities" field="lavado_nasal" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Lavado Oídos" section="activities" field="lavado_oidos" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Electros" section="activities" field="electros" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Visitas Dom." section="activities" field="visitas_domiciliares" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Jornadas" section="activities" field="jornadas_especiales" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Ayudas" section="activities" field="entregas_ayudas" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Vacunas" section="activities" field="vacunas_rutina" formData={formData} handleInputChange={handleInputChange} />
+          </div>
+        )}
+
+        {/* AGE GROUPS */}
+        <SectionHeader id="age" activeSection={activeSection} setActiveSection={setActiveSection} title="Grupo Etario" icon={Users} />
+        {activeSection === 'age' && (
+          <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <InputField label="Lactante (0-2)" section="age_groups" field="lactante_0_2" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Preescolar (3-5)" section="age_groups" field="preescolar_3_5" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Escolar (6-11)" section="age_groups" field="escolar_6_11" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adolescente (12-17)" section="age_groups" field="adolescente_12_17" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adulto Joven (18-29)" section="age_groups" field="adulto_joven_18_29" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adulto (30-59)" section="age_groups" field="adulto_30_59" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adulto Mayor (60+)" section="age_groups" field="adulto_mayor_60" formData={formData} handleInputChange={handleInputChange} />
+          </div>
+        )}
+
+        {/* EPIDEMIOLOGY */}
+        <SectionHeader id="epi" activeSection={activeSection} setActiveSection={setActiveSection} title="Programas y Epidemiología" icon={ShieldAlert} />
+        {activeSection === 'epi' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <InputField label="Cardiovascular" section="epidemiology" field="cardiovascular" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Diabetes" section="epidemiology" field="diabetes" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Asma" section="epidemiology" field="asma" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="IRA" section="epidemiology" field="ira" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Embarazada" section="epidemiology" field="embarazada" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="COVID-19" section="epidemiology" field="covid_19" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Fiebre" section="epidemiology" field="fiebre" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Dengue" section="epidemiology" field="dengue" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Zika" section="epidemiology" field="zika" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Chicungunya" section="epidemiology" field="chicungunya" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Varicela" section="epidemiology" field="varicela" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Rubeola" section="epidemiology" field="rubeola" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Sarampión" section="epidemiology" field="sarampion" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="H1N1" section="epidemiology" field="h1n1" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Mordedura Canina" section="epidemiology" field="mordeduras_canina" formData={formData} handleInputChange={handleInputChange} />
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+          GUARDAR Y ENVIAR REPORTE
+        </button>
+      </form>
+
+      <AnimatePresence>
+        {showWhatsAppOptions && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
+            <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="text-emerald-600 w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800">¡Reporte Guardado!</h3>
+                <p className="text-slate-500 text-sm">Selecciona el contacto para enviar por WhatsApp:</p>
+              </div>
+
+              <div className="space-y-3">
+                {phoneNumbers.map((phone, index) => (
+                  <button
+                    key={index}
+                    onClick={() => sendWhatsApp(phone)}
+                    className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-emerald-50 hover:text-emerald-700 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-emerald-100">
+                        <MessageSquare className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <span className="font-bold">{phone}</span>
+                    </div>
+                    <ChevronDown className="w-5 h-5 -rotate-90 opacity-0 group-hover:opacity-100 transition-all" />
+                  </button>
+                ))}
+                
                 <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    const encodedText = encodeURIComponent(lastReport.whatsapp_summary);
-                    const cleanPhone = phone.replace(/\D/g, '');
-                    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, '_blank');
-                  }}
-                  className="flex items-center justify-center gap-3 bg-emerald-600 text-white py-4 px-6 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200"
+                  onClick={sendToOther}
+                  className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:text-blue-500 transition-all"
                 >
-                  <MessageSquare className="w-5 h-5" />
-                  {phone}
+                  OTRO CONTACTO
                 </button>
-              ))}
+              </div>
+
               <button
-                type="button"
-                onClick={() => {
-                  const encodedText = encodeURIComponent(lastReport.whatsapp_summary);
-                  window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-                }}
-                className="flex items-center justify-center gap-3 bg-slate-600 text-white py-4 px-6 rounded-2xl font-black text-sm hover:bg-slate-700 transition-all shadow-lg shadow-slate-200"
+                onClick={() => setShowWhatsAppOptions(false)}
+                className="w-full py-3 text-slate-400 font-bold hover:text-slate-600 transition-all"
               >
-                <Send className="w-5 h-5" />
-                OTRO CONTACTO
+                Cerrar
               </button>
             </div>
-            <button 
-              type="button"
-              onClick={() => setShowWhatsAppOptions(false)}
-              className="w-full mt-4 text-emerald-600 font-bold text-xs uppercase tracking-widest hover:underline"
-            >
-              Cerrar
-            </button>
-          </div>
-        ) : (
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 px-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl shadow-green-200 text-lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin w-6 h-6" />
-                Guardando Reporte...
-              </>
-            ) : (
-              <>
-                <MessageSquare className="w-6 h-6" />
-                Finalizar y Enviar WhatsApp
-              </>
-            )}
-          </button>
+          </motion.div>
         )}
-        <p className="text-center text-xs text-gray-400 mt-3">
-          Se guardará en Supabase, Excel y se abrirá WhatsApp automáticamente.
-        </p>
-      </div>
-    </form>
+      </AnimatePresence>
+    </div>
   );
 };

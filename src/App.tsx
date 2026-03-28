@@ -4,6 +4,11 @@ import { ReportForm } from './components/ReportForm';
 import { ManualReportForm } from './components/ManualReportForm';
 import { Dashboard } from './components/Dashboard';
 import { getReports } from './lib/supabase';
+import { PatientEntryForm } from './components/PatientEntryForm';
+import { PatientList } from './components/PatientList';
+import { PatientEntry } from './types';
+import { patientsToReport, exportToExcel } from './lib/reportUtils';
+import { saveReport } from './lib/supabase';
 import { 
   Activity, 
   History, 
@@ -16,14 +21,35 @@ import {
   BrainCircuit,
   Settings,
   CheckCircle2,
-  MessageSquare
+  MessageSquare,
+  Users,
+  Download,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 function App() {
   const [reports, setReports] = useState<HealthReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'new' | 'history' | 'patients'>('dashboard');
+  const [patients, setPatients] = useState<PatientEntry[]>(() => {
+    const saved = localStorage.getItem('health_app_patients');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showCloseDayModal, setShowCloseDayModal] = useState(false);
+  const [closingDay, setClosingDay] = useState(false);
+  const [staff, setStaff] = useState({
+    nurse: '',
+    doctorGen: '',
+    doctorSpec: ''
+  });
+  const [lastGeneratedReport, setLastGeneratedReport] = useState<HealthReport | null>(null);
+  const [showWhatsAppOptions, setShowWhatsAppOptions] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('health_app_patients', JSON.stringify(patients));
+  }, [patients]);
   const [entryMode, setEntryMode] = useState<'manual' | 'ai'>('manual');
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -62,6 +88,56 @@ function App() {
     setActiveTab('dashboard');
   };
 
+  const handleCloseDay = async () => {
+    setClosingDay(true);
+    try {
+      const report = patientsToReport(patients, staff);
+      
+      // 1. Save to Supabase
+      try {
+        await saveReport(report);
+      } catch (err) {
+        console.error('Error saving to Supabase:', err);
+      }
+
+      // 2. Send to Apps Script
+      const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
+      if (appsScriptUrl) {
+        try {
+          await fetch(appsScriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(report)
+          });
+        } catch (err) {
+          console.error('Error sending to Apps Script:', err);
+        }
+      }
+
+      // 3. Export to Excel
+      exportToExcel(patients, report);
+
+      setLastGeneratedReport(report);
+      setReports([report, ...reports]);
+      setPatients([]); // Clear patients for next day
+      setShowCloseDayModal(false);
+      setShowWhatsAppOptions(true);
+    } catch (err) {
+      console.error('Error closing day:', err);
+      alert('Error al generar el reporte de cierre.');
+    } finally {
+      setClosingDay(false);
+    }
+  };
+
+  const sendWhatsApp = (phone: string) => {
+    if (!lastGeneratedReport) return;
+    const text = encodeURIComponent(lastGeneratedReport.whatsapp_summary);
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+  };
+
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
   const isAIScriptConfigured = !!import.meta.env.VITE_APPS_SCRIPT_URL;
 
@@ -87,6 +163,12 @@ function App() {
             onClick={() => { setActiveTab('new'); setShowSettings(false); }} 
             icon={PlusCircle} 
             label="Nuevo" 
+          />
+          <NavButton 
+            active={activeTab === 'patients'} 
+            onClick={() => { setActiveTab('patients'); setShowSettings(false); }} 
+            icon={Users} 
+            label="Pacientes" 
           />
           <NavButton 
             active={activeTab === 'history'} 
@@ -400,11 +482,163 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {activeTab === 'patients' && (
+                  <div className="space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-3xl font-black text-slate-900">Gestión de Pacientes</h2>
+                        <p className="text-slate-500 font-medium">Registro individual y cierre de jornada</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-1">
+                        <PatientEntryForm onAdd={(p) => setPatients([p, ...patients])} />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <PatientList 
+                          patients={patients} 
+                          onRemove={(id) => setPatients(patients.filter(p => p.id !== id))}
+                          onCloseDay={() => setShowCloseDayModal(true)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </main>
+
+      {/* MODALS */}
+      <AnimatePresence>
+        {showCloseDayModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-black text-slate-900">Cierre de Jornada</h3>
+                <button onClick={() => setShowCloseDayModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Enfermero(a) Responsable</label>
+                  <input 
+                    type="text" 
+                    value={staff.nurse}
+                    onChange={(e) => setStaff({...staff, nurse: e.target.value})}
+                    placeholder="Nombre completo"
+                    className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Médico General</label>
+                  <input 
+                    type="text" 
+                    value={staff.doctorGen}
+                    onChange={(e) => setStaff({...staff, doctorGen: e.target.value})}
+                    placeholder="Nombre del médico"
+                    className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Especialista</label>
+                  <input 
+                    type="text" 
+                    value={staff.doctorSpec}
+                    onChange={(e) => setStaff({...staff, doctorSpec: e.target.value})}
+                    placeholder="Nombre del especialista"
+                    className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleCloseDay}
+                disabled={closingDay || !staff.nurse}
+                className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {closingDay ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                GENERAR REPORTE Y CERRAR
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showWhatsAppOptions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="text-emerald-600 w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800">¡Reporte Generado!</h3>
+                <p className="text-slate-500 text-sm">El reporte ha sido guardado y exportado a Excel. Ahora puedes enviarlo por WhatsApp:</p>
+              </div>
+
+              <div className="space-y-3">
+                {phoneNumbers.map((phone, index) => (
+                  <button
+                    key={index}
+                    onClick={() => sendWhatsApp(phone)}
+                    className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-emerald-50 hover:text-emerald-700 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-emerald-100">
+                        <MessageSquare className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <span className="font-bold">{phone}</span>
+                    </div>
+                    <ChevronDown className="w-5 h-5 -rotate-90 opacity-0 group-hover:opacity-100 transition-all" />
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => {
+                    if (!lastGeneratedReport) return;
+                    const text = encodeURIComponent(lastGeneratedReport.whatsapp_summary);
+                    window.open(`https://wa.me/?text=${text}`, '_blank');
+                  }}
+                  className="w-full p-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:text-blue-500 transition-all"
+                >
+                  OTRO CONTACTO
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowWhatsAppOptions(false)}
+                className="w-full py-3 text-slate-400 font-bold hover:text-slate-600 transition-all"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
