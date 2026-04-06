@@ -478,6 +478,7 @@ function App() {
                           patients={patients} 
                           onRemove={handleRemovePatient}
                           onCloseDay={() => setShowCloseDayModal(true)}
+                          onReopen={loadPatients}
                         />
                       </div>
                     </div>

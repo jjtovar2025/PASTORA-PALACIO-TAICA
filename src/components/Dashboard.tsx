@@ -153,15 +153,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
   }, [filteredReports]);
 
   // Data for Age Groups
-  const ageData = [
-    { name: '0-2', value: aggregatedData.age_groups.lactante_0_2 },
-    { name: '3-5', value: aggregatedData.age_groups.preescolar_3_5 },
-    { name: '6-11', value: aggregatedData.age_groups.escolar_6_11 },
-    { name: '12-17', value: aggregatedData.age_groups.adolescente_12_17 },
-    { name: '18-29', value: aggregatedData.age_groups.adulto_joven_18_29 },
-    { name: '30-59', value: aggregatedData.age_groups.adulto_30_59 },
-    { name: '60+', value: aggregatedData.age_groups.adulto_mayor_60 },
-  ];
+  const ageData = useMemo(() => [
+    { name: '0-2', value: aggregatedData.age_groups.lactante_0_2 || 0 },
+    { name: '3-5', value: aggregatedData.age_groups.preescolar_3_5 || 0 },
+    { name: '6-11', value: aggregatedData.age_groups.escolar_6_11 || 0 },
+    { name: '12-17', value: aggregatedData.age_groups.adolescente_12_17 || 0 },
+    { name: '18-29', value: aggregatedData.age_groups.adulto_joven_18_29 || 0 },
+    { name: '30-59', value: aggregatedData.age_groups.adulto_30_59 || 0 },
+    { name: '60+', value: aggregatedData.age_groups.adulto_mayor_60 || 0 },
+  ], [aggregatedData.age_groups]);
+
+  const hasAgeData = useMemo(() => ageData.some(d => d.value > 0), [ageData]);
+  const hasSpecData = useMemo(() => specData.some(d => d.value > 0), [specData]);
+  
+  const epidemData = useMemo(() => {
+    if (!aggregatedData.epidemiology) return [];
+    return [
+      { name: 'Cardiovascular', value: aggregatedData.epidemiology.cardiovascular || 0 },
+      { name: 'Diabetes', value: aggregatedData.epidemiology.diabetes || 0 },
+      { name: 'Asma', value: aggregatedData.epidemiology.asma || 0 },
+      { name: 'IRA', value: aggregatedData.epidemiology.ira || 0 },
+      { name: 'Embarazadas', value: aggregatedData.epidemiology.embarazada || 0 },
+      { name: 'Diarreas', value: aggregatedData.epidemiology.diarreas || 0 },
+      { name: 'Hipertensión', value: aggregatedData.epidemiology.hipertension || 0 },
+    ].filter(d => d.value > 0);
+  }, [aggregatedData.epidemiology]);
+
+  const hasEpidemData = useMemo(() => epidemData.some(d => d.value > 0), [epidemData]);
 
   const StatCard = ({ title, value, icon: Icon, color }: any) => (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
@@ -200,25 +218,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
             <Users className="w-5 h-5 text-blue-600" />
             Distribución por Especialidad
           </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={specData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {specData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="h-[300px] w-full relative">
+            {hasSpecData ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <PieChart>
+                  <Pie
+                    data={specData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {specData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold">
+                Sin datos de especialidades
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4">
             {specData.map((entry, index) => (
@@ -236,18 +260,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
             <Users className="w-5 h-5 text-purple-600" />
             Distribución por Edad
           </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ageData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-[300px] w-full relative">
+            {hasAgeData ? (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <BarChart data={ageData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  />
+                  <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs font-bold">
+                Sin datos de edades
+              </div>
+            )}
           </div>
         </div>
       </div>

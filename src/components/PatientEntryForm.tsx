@@ -68,6 +68,36 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
   const [formData, setFormData] = useState<Omit<PatientEntry, 'id'>>(initialFormState);
   const [showAutosaveAlert, setShowAutosaveAlert] = useState(false);
 
+  const calculateAge = (birthDate: string) => {
+    if (!birthDate) return '';
+    try {
+      const today = new Date();
+      const birth = new Date(birthDate);
+      if (isNaN(birth.getTime())) return '';
+      
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      
+      return age >= 0 ? age.toString() : '0';
+    } catch (e) {
+      return '';
+    }
+  };
+
+  // Update age when birthDate changes
+  useEffect(() => {
+    if (formData.birthDate) {
+      const newAge = calculateAge(formData.birthDate);
+      if (newAge !== formData.age) {
+        setFormData(prev => ({ ...prev, age: newAge }));
+      }
+    }
+  }, [formData.birthDate]);
+
   // Load autosave on mount
   useEffect(() => {
     const saved = localStorage.getItem(AUTOSAVE_KEY);
@@ -184,7 +214,17 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <InputField label="Cédula" name="idNumber" placeholder="V-00000000" value={formData.idNumber} onChange={handleInputChange} />
             <InputField label="Fecha Nac." name="birthDate" type="date" value={formData.birthDate} onChange={handleInputChange} />
-            <InputField label="Edad" name="age" placeholder="Ej: 25" value={formData.age} onChange={handleInputChange} />
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Edad</label>
+              <input
+                type="text"
+                value={formData.age}
+                onChange={e => handleInputChange('age', e.target.value)}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold"
+                placeholder="Ej: 25"
+              />
+              <p className="text-[9px] text-slate-400 italic mt-1">Se calcula automáticamente desde la fecha de nacimiento</p>
+            </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Sexo</label>
               <select

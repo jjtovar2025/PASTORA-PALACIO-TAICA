@@ -7,11 +7,12 @@ interface PatientListProps {
   patients: PatientEntry[];
   onRemove: (id: string) => void;
   onCloseDay: () => void;
+  onReopen?: () => void;
 }
 
 const ITEMS_PER_PAGE = 5;
 
-export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, onCloseDay }) => {
+export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, onCloseDay, onReopen }) => {
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -43,7 +44,7 @@ export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, on
 
   if (patients.length === 0) {
     return (
-      <div className="bg-white p-12 rounded-3xl border border-slate-200 border-dashed text-center space-y-4">
+      <div className="bg-white p-12 rounded-3xl border border-slate-200 border-dashed text-center space-y-6">
         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
           <User className="text-slate-300 w-8 h-8" />
         </div>
@@ -51,6 +52,15 @@ export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, on
           <p className="text-slate-500 font-bold text-sm">No hay pacientes registrados hoy</p>
           <p className="text-slate-400 text-xs">Comienza registrando un paciente en el formulario.</p>
         </div>
+        {onReopen && (
+          <button
+            onClick={onReopen}
+            className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all"
+          >
+            <Clock className="w-4 h-4" />
+            REABRIR DÍA / CARGAR PACIENTES
+          </button>
+        )}
       </div>
     );
   }

@@ -179,7 +179,8 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
   const generateWhatsAppText = (data: HealthReport) => {
     const pad = (n: number) => n.toString().padStart(2, '0');
     
-    return `Morbilidad diaria 
+    return `*Reporte de Enfermería*
+Morbilidad diaria 
 *Centro + Salud. Pastora Palacios Taica 
 *Fecha:*${data.header.date.split('-').reverse().join('/')}*
 *Día: *${data.header.day}*

@@ -47,14 +47,14 @@ export const patientsToReport = (patients: PatientEntry[], staff: { nurse: strin
       sondas: patients.filter(p => p.treatmentGiven?.toUpperCase().includes('SONDA')).length,
     },
     epidemiology: {
-      cardiovascular: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length,
-      diabetes: patients.filter(p => p.diagnosis?.toUpperCase().includes('DIABETES')).length,
-      ira: patients.filter(p => p.diagnosis?.toUpperCase().match(/IRA|ASMA|GRIPE/)).length,
+      cardiovascular: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN|CARDIO|CORAZON/)).length,
+      diabetes: patients.filter(p => p.diagnosis?.toUpperCase().match(/DIABETES|GLICEMIA|AZUCAR/)).length,
+      ira: patients.filter(p => p.diagnosis?.toUpperCase().match(/IRA|ASMA|GRIPE|TOS|RESPIRATORIO|BRONQUITIS/)).length,
       asma: patients.filter(p => p.diagnosis?.toUpperCase().includes('ASMA')).length,
-      fiebre: patients.filter(p => p.diagnosis?.toUpperCase().includes('FIEBRE')).length,
+      fiebre: patients.filter(p => p.diagnosis?.toUpperCase().match(/FIEBRE|FEBRIL/)).length,
       dengue: patients.filter(p => p.diagnosis?.toUpperCase().includes('DENGUE')).length,
-      covid_19: patients.filter(p => p.diagnosis?.toUpperCase().includes('COVID')).length,
-      diarreas: patients.filter(p => p.diagnosis?.toUpperCase().includes('DIARREA')).length,
+      covid_19: patients.filter(p => p.diagnosis?.toUpperCase().match(/COVID|CORONAVIRUS/)).length,
+      diarreas: patients.filter(p => p.diagnosis?.toUpperCase().match(/DIARREA|GASTRO/)).length,
       hipertension: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length,
       status_level: patients.filter(p => p.diagnosis?.toUpperCase().match(/HTA|HIPERTEN/)).length > 5 ? 'CRITICAL' : 'STABLE'
     },
@@ -63,7 +63,8 @@ export const patientsToReport = (patients: PatientEntry[], staff: { nurse: strin
 
   // Generate WhatsApp text
   const pad = (n: number) => n.toString().padStart(2, '0');
-  report.whatsapp_summary = `Morbilidad diaria 
+  report.whatsapp_summary = `*Reporte de Enfermería*
+Morbilidad diaria 
 *Centro + Salud. Pastora Palacios Taica 
 *Fecha:*${report.header.date.split('-').reverse().join('/')}*
 *Día: *${report.header.day}*
