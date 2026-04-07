@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PatientEntry, HealthReport } from '../types';
-import { Trash2, User, Clock, ChevronRight, FileCheck, Send, MessageSquare, Filter, ChevronLeft } from 'lucide-react';
+import { Trash2, User, Clock, ChevronRight, FileCheck, Send, MessageSquare, Filter, ChevronLeft, Edit } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface PatientListProps {
@@ -8,11 +8,12 @@ interface PatientListProps {
   onRemove: (id: string) => void;
   onCloseDay: () => void;
   onReopen?: () => void;
+  onEdit: (patient: PatientEntry) => void;
 }
 
 const ITEMS_PER_PAGE = 5;
 
-export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, onCloseDay, onReopen }) => {
+export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, onCloseDay, onReopen, onEdit }) => {
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -143,12 +144,22 @@ export const PatientList: React.FC<PatientListProps> = ({ patients, onRemove, on
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => onRemove(p.id)}
-                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onEdit(p)}
+                        className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Editar Paciente"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onRemove(p.id)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Eliminar Paciente"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}

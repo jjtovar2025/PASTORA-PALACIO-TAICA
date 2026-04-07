@@ -60,6 +60,7 @@ function App() {
   }, []);
   const [patients, setPatients] = useState<PatientEntry[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<PatientEntry | null>(null);
   const [showCloseDayModal, setShowCloseDayModal] = useState(false);
   const [closingDay, setClosingDay] = useState(false);
   const [staff, setStaff] = useState({
@@ -160,6 +161,14 @@ function App() {
     setPatients(newPatients);
     localStorage.setItem('health_app_patients', JSON.stringify(newPatients));
     await savePatient(p);
+  };
+
+  const handleUpdatePatient = async (p: PatientEntry) => {
+    const newPatients = patients.map(item => item.id === p.id ? p : item);
+    setPatients(newPatients);
+    localStorage.setItem('health_app_patients', JSON.stringify(newPatients));
+    setEditingPatient(null);
+    await savePatient(p); // savePatient uses upsert, so it works for updates too
   };
 
   const handleRemovePatient = async (id: string) => {
@@ -471,7 +480,12 @@ function App() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       <div className="lg:col-span-1">
-                        <PatientEntryForm onAdd={handleAddPatient} />
+                        <PatientEntryForm 
+                          onAdd={handleAddPatient} 
+                          editingPatient={editingPatient}
+                          onUpdate={handleUpdatePatient}
+                          onCancelEdit={() => setEditingPatient(null)}
+                        />
                       </div>
                       <div className="lg:col-span-2">
                         <PatientList 
@@ -479,6 +493,10 @@ function App() {
                           onRemove={handleRemovePatient}
                           onCloseDay={() => setShowCloseDayModal(true)}
                           onReopen={loadPatients}
+                          onEdit={(p) => {
+                            setEditingPatient(p);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
                         />
                       </div>
                     </div>

@@ -53,9 +53,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
     
     // Ensure all required sections exist in initial
     if (!initial.stats) initial.stats = { total_patients: 0, female: 0, male: 0, med_general: 0, emergencia: 0, pediatria: 0, geriatria: 0, med_interna: 0, ginecologia: 0, prenatal: 0 };
-    if (!initial.activities) initial.activities = { ta_control: 0, glicemia: 0, peso: 0, talla: 0, tto_ev: 0, tto_im: 0, tto_sl: 0, tto_vo: 0, tto_sc: 0, tto_protocolo: 0, nebulizaciones: 0, curas: 0, suturas: 0, retiro_puntos: 0, sondas: 0, lavado_ocular: 0, lavado_nasal: 0, lavado_oidos: 0, electros: 0, visitas_domiciliares: 0, jornadas_especiales: 0, entregas_ayudas: 0, vacunas_rutina: 0 };
-    if (!initial.age_groups) initial.age_groups = { lactante_0_2: 0, preescolar_3_5: 0, escolar_6_11: 0, adolescente_12_17: 0, adulto_joven_18_29: 0, adulto_30_59: 0, adulto_mayor_60: 0 };
-    if (!initial.epidemiology) initial.epidemiology = { cardiovascular: 0, diabetes: 0, asma: 0, ira: 0, embarazada: 0, covid_19: 0, fiebre: 0, dengue: 0, zika: 0, chicungunya: 0, varicela: 0, rubeola: 0, sarampion: 0, h1n1: 0, mordeduras_canina: 0, diarreas: 0, amigdalitis: 0, hipertension: 0, otros: 0, status_level: 'STABLE' };
+    if (!initial.activities) initial.activities = { ta_control: 0, glicemia: 0, peso: 0, talla: 0, tto_ev: 0, tto_im: 0, tto_sl: 0, tto_vo: 0, tto_sc: 0, tto_protocolo: 0, nebulizaciones: 0, curas: 0, suturas: 0, retiro_puntos: 0, sondas: 0, lavado_ocular: 0, lavado_nasal: 0, lavado_oidos: 0, electros: 0, visitas_domiciliares: 0, jornadas_especiales: 0, entregas_ayudas: 0, vacunas_rutinas: 0 };
+    if (!initial.age_groups) initial.age_groups = { lactante_0_2: 0, preescolar_3_5: 0, escolar_6_11: 0, adolescente_12_18: 0, adulto_19_59: 0, adulto_mayor_60: 0 };
+    if (!initial.epidemiology) initial.epidemiology = { cardiovascular: 0, diabetes: 0, asma: 0, ira: 0, embarazada: 0, covid: 0, fiebre: 0, dengue: 0, zika: 0, chicungunya: 0, varicela: 0, rubeola: 0, sarampion: 0, h1n1: 0, mordedura_canina: 0, diarreas: 0, amigdalitis: 0, hipertension: 0, otros: 0, status_level: 'STABLE' };
+    if (!initial.references) initial.references = { total: 0, ambulancia: 0, propios_medios: 0 };
 
     // If more than one report, aggregate numeric values
     if (filteredReports.length > 1) {
@@ -157,9 +158,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {
     { name: '0-2', value: aggregatedData.age_groups.lactante_0_2 || 0 },
     { name: '3-5', value: aggregatedData.age_groups.preescolar_3_5 || 0 },
     { name: '6-11', value: aggregatedData.age_groups.escolar_6_11 || 0 },
-    { name: '12-17', value: aggregatedData.age_groups.adolescente_12_17 || 0 },
-    { name: '18-29', value: aggregatedData.age_groups.adulto_joven_18_29 || 0 },
-    { name: '30-59', value: aggregatedData.age_groups.adulto_30_59 || 0 },
+    { name: '12-18', value: aggregatedData.age_groups.adolescente_12_18 || 0 },
+    { name: '19-59', value: aggregatedData.age_groups.adulto_19_59 || 0 },
     { name: '60+', value: aggregatedData.age_groups.adulto_mayor_60 || 0 },
   ], [aggregatedData.age_groups]);
 

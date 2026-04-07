@@ -112,19 +112,19 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
       visitas_domiciliares: 0,
       jornadas_especiales: 0,
       entregas_ayudas: 0,
-      vacunas_rutina: 0
+      vacunas_rutinas: 0
     },
     age_groups: {
       lactante_0_2: 0,
       preescolar_3_5: 0,
       escolar_6_11: 0,
-      adolescente_12_17: 0,
-      adulto_joven_18_29: 0,
-      adulto_30_59: 0,
+      adolescente_12_18: 0,
+      adulto_19_59: 0,
       adulto_mayor_60: 0
     },
     references: {
-      ambulancia_mas_salud: 0,
+      total: 0,
+      ambulancia: 0,
       propios_medios: 0
     },
     epidemiology: {
@@ -133,7 +133,7 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
       asma: 0,
       ira: 0,
       embarazada: 0,
-      covid_19: 0,
+      covid: 0,
       fiebre: 0,
       dengue: 0,
       zika: 0,
@@ -142,7 +142,7 @@ export const ManualReportForm: React.FC<ManualReportFormProps> = ({ onSuccess, p
       rubeola: 0,
       sarampion: 0,
       h1n1: 0,
-      mordeduras_canina: 0,
+      mordedura_canina: 0,
       diarreas: 0,
       amigdalitis: 0,
       hipertension: 0,
@@ -219,18 +219,17 @@ _Sondas: ${pad(data.activities.sondas)}
 ▪️Visitas domiciliares: ${pad(data.activities.visitas_domiciliares)}
 ▪️Jornadas especiales: ${pad(data.activities.jornadas_especiales)}
 ▪️Entregas de ayudas: ${pad(data.activities.entregas_ayudas)}
-▪️💉 Vacunas de rutinas: ${pad(data.activities.vacunas_rutina)}
-
+▪️💉 Vacunas de rutinas: ${pad(data.activities.vacunas_rutinas)}
 *3-Por Grupo Etario*
 ➖Lactante 0 a 2 años : ${pad(data.age_groups.lactante_0_2)}
 ➖Preescolar 3 a 5 años : ${pad(data.age_groups.preescolar_3_5)}
 ➖Escolares 6 a 11 años: ${pad(data.age_groups.escolar_6_11)}
-➖Adolescente 12 a 18: ${pad(data.age_groups.adolescente_12_17)}
-➖Adulto 19 a 59 años: ${pad(data.age_groups.adulto_joven_18_29 + data.age_groups.adulto_30_59)}
+➖Adolescente 12 a 18: ${pad(data.age_groups.adolescente_12_18)}
+➖Adulto 19 a 59 años: ${pad(data.age_groups.adulto_19_59)}
 ➖Adulto mayor 60 años o más: ${pad(data.age_groups.adulto_mayor_60)}
 
-▪️ Referencia de casos: ${pad(data.references.ambulancia_mas_salud + data.references.propios_medios)}
-Por Ambulancia de Más salud: ${pad(data.references.ambulancia_mas_salud)}
+▪️ Referencia de casos: ${pad(data.references.total)}
+Por Ambulancia de Más salud: ${pad(data.references.ambulancia)}
  Por sus propios medios: ${pad(data.references.propios_medios)}
 
 *4- Por Programa de Salud*
@@ -239,7 +238,7 @@ Por Ambulancia de Más salud: ${pad(data.references.ambulancia_mas_salud)}
 ▪️Asma: ${pad(data.epidemiology.asma)}
 ▪️IRA: ${pad(data.epidemiology.ira)}
 ▪️ Embarazada: ${pad(data.epidemiology.embarazada)}
-▪️Casos sospechoso de COVID-19 😷: ${pad(data.epidemiology.covid_19)}
+▪️Casos sospechoso de COVID-19 😷: ${pad(data.epidemiology.covid)}
 ▪️ Fiebre ${pad(data.epidemiology.fiebre)}
  Dengue: ${pad(data.epidemiology.dengue)}
 ▪️ Fiebre 🦟 Zika: ${pad(data.epidemiology.zika)}
@@ -248,7 +247,7 @@ Por Ambulancia de Más salud: ${pad(data.references.ambulancia_mas_salud)}
 ▪️Casos de Rubeola: ${pad(data.epidemiology.rubeola)}
 ▪️Casos de Sarampión: ${pad(data.epidemiology.sarampion)}
 ▪️Casos de H1N1: ${pad(data.epidemiology.h1n1)}
-▪️Casos de mordeduras canina: ${pad(data.epidemiology.mordeduras_canina)}
+▪️Casos de mordeduras canina: ${pad(data.epidemiology.mordedura_canina)}
 
 ▪️💉 *Responsables del Reporte : ${data.header.staff_enfermeria}
 Consulta Médico General: ${data.header.doctor_general}
@@ -378,7 +377,7 @@ Especialista : ${data.header.doctor_specialist}`;
             <InputField label="Visitas Dom." section="activities" field="visitas_domiciliares" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Jornadas" section="activities" field="jornadas_especiales" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Ayudas" section="activities" field="entregas_ayudas" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="Vacunas" section="activities" field="vacunas_rutina" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Vacunas" section="activities" field="vacunas_rutinas" formData={formData} handleInputChange={handleInputChange} />
           </div>
         )}
 
@@ -389,10 +388,19 @@ Especialista : ${data.header.doctor_specialist}`;
             <InputField label="Lactante (0-2)" section="age_groups" field="lactante_0_2" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Preescolar (3-5)" section="age_groups" field="preescolar_3_5" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Escolar (6-11)" section="age_groups" field="escolar_6_11" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="Adolescente (12-17)" section="age_groups" field="adolescente_12_17" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="Adulto Joven (18-29)" section="age_groups" field="adulto_joven_18_29" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="Adulto (30-59)" section="age_groups" field="adulto_30_59" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adolescente (12-18)" section="age_groups" field="adolescente_12_18" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Adulto (19-59)" section="age_groups" field="adulto_19_59" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Adulto Mayor (60+)" section="age_groups" field="adulto_mayor_60" formData={formData} handleInputChange={handleInputChange} />
+          </div>
+        )}
+
+        {/* REFERENCES */}
+        <SectionHeader id="refs" activeSection={activeSection} setActiveSection={setActiveSection} title="Referencias" icon={Activity} />
+        {activeSection === 'refs' && (
+          <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <InputField label="Total Referencias" section="references" field="total" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Ambulancia" section="references" field="ambulancia" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Propios Medios" section="references" field="propios_medios" formData={formData} handleInputChange={handleInputChange} />
           </div>
         )}
 
@@ -405,7 +413,7 @@ Especialista : ${data.header.doctor_specialist}`;
             <InputField label="Asma" section="epidemiology" field="asma" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="IRA" section="epidemiology" field="ira" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Embarazada" section="epidemiology" field="embarazada" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="COVID-19" section="epidemiology" field="covid_19" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="COVID-19" section="epidemiology" field="covid" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Fiebre" section="epidemiology" field="fiebre" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Dengue" section="epidemiology" field="dengue" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Zika" section="epidemiology" field="zika" formData={formData} handleInputChange={handleInputChange} />
@@ -414,7 +422,7 @@ Especialista : ${data.header.doctor_specialist}`;
             <InputField label="Rubeola" section="epidemiology" field="rubeola" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="Sarampión" section="epidemiology" field="sarampion" formData={formData} handleInputChange={handleInputChange} />
             <InputField label="H1N1" section="epidemiology" field="h1n1" formData={formData} handleInputChange={handleInputChange} />
-            <InputField label="Mordedura Canina" section="epidemiology" field="mordeduras_canina" formData={formData} handleInputChange={handleInputChange} />
+            <InputField label="Mordedura Canina" section="epidemiology" field="mordedura_canina" formData={formData} handleInputChange={handleInputChange} />
           </div>
         )}
 

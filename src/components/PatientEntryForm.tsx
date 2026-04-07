@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface PatientEntryFormProps {
   onAdd: (entry: PatientEntry) => void;
+  editingPatient?: PatientEntry | null;
+  onUpdate?: (entry: PatientEntry) => void;
+  onCancelEdit?: () => void;
 }
 
 const AUTOSAVE_KEY = 'health_app_patient_form_autosave';
@@ -23,6 +26,19 @@ const InputField = React.memo(({ label, name, value, onChange, type = "text", pl
   </div>
 ));
 
+const CheckboxField = React.memo(({ label, name, checked, onChange }: any) => (
+  <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+    <input
+      type="checkbox"
+      id={name}
+      checked={checked}
+      onChange={e => onChange(name, e.target.checked)}
+      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+    />
+    <label htmlFor={name} className="text-[10px] font-bold text-slate-700 cursor-pointer select-none">{label}</label>
+  </div>
+));
+
 const TextAreaField = React.memo(({ label, name, value, onChange, placeholder = "", height = "h-20" }: any) => (
   <div className="space-y-1">
     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{label}</label>
@@ -35,7 +51,7 @@ const TextAreaField = React.memo(({ label, name, value, onChange, placeholder = 
   </div>
 ));
 
-export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => {
+export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd, editingPatient, onUpdate, onCancelEdit }) => {
   const initialFormState: Omit<PatientEntry, 'id'> = {
     date: new Date().toISOString().split('T')[0],
     entryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
@@ -62,11 +78,46 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
     treatmentPrescribed: '',
     referredHvsr: false,
     referredSpecialist: false,
-    exitTime: ''
+    exitTime: '',
+    tto_ev: false,
+    tto_im: false,
+    tto_sl: false,
+    tto_vo: false,
+    tto_sc: false,
+    tto_protocolo: false,
+    nebulizaciones: false,
+    curas: false,
+    suturas: false,
+    retiro_puntos: false,
+    sondas: false,
+    lavado_ocular: false,
+    lavado_nasal: false,
+    lavado_oidos: false,
+    electros: false,
+    visitas_domiciliares: false,
+    jornadas_especiales: false,
+    entregas_ayudas: false,
+    vacunas_rutinas: false,
+    referencia_ambulancia: false,
+    referencia_propios_medios: false
   };
 
   const [formData, setFormData] = useState<Omit<PatientEntry, 'id'>>(initialFormState);
   const [showAutosaveAlert, setShowAutosaveAlert] = useState(false);
+
+  // Load editing patient into form
+  useEffect(() => {
+    if (editingPatient) {
+      const { id, ...rest } = editingPatient;
+      setFormData(rest);
+    } else {
+      setFormData({
+        ...initialFormState,
+        date: new Date().toISOString().split('T')[0],
+        entryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+      });
+    }
+  }, [editingPatient]);
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return '';
@@ -100,6 +151,7 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
 
   // Load autosave on mount
   useEffect(() => {
+    if (editingPatient) return; // Don't load autosave when editing
     const saved = localStorage.getItem(AUTOSAVE_KEY);
     if (saved) {
       try {
@@ -114,25 +166,27 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
         console.error("Error loading autosave", e);
       }
     }
-  }, []);
+  }, [editingPatient]);
 
   // Autosave every 30 seconds
   useEffect(() => {
+    if (editingPatient) return; // Don't autosave when editing
     const interval = setInterval(() => {
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(formData));
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [formData]);
+  }, [formData, editingPatient]);
 
   // Save on exit
   useEffect(() => {
+    if (editingPatient) return;
     const handleBeforeUnload = () => {
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(formData));
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [formData]);
+  }, [formData, editingPatient]);
 
   const handleInputChange = React.useCallback((name: string, value: any) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -140,11 +194,20 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const entry: PatientEntry = {
-      ...formData,
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36)
-    };
-    onAdd(entry);
+    
+    if (editingPatient && onUpdate) {
+      onUpdate({
+        ...formData,
+        id: editingPatient.id
+      });
+    } else {
+      const entry: PatientEntry = {
+        ...formData,
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36)
+      };
+      onAdd(entry);
+    }
+
     // Reset form and clear autosave
     setFormData({
       ...initialFormState,
@@ -291,50 +354,85 @@ export const PatientEntryForm: React.FC<PatientEntryFormProps> = ({ onAdd }) => 
           <InputField label="Especialidad" name="specialty" placeholder="Ej: Medicina General" value={formData.specialty} onChange={handleInputChange} />
         </div>
 
-        {/* Sección 5: Tratamiento y Referencia */}
+        {/* Sección 5: Tratamiento y Actividades */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
               <ClipboardList className="text-rose-600 w-5 h-5" />
             </div>
-            <h3 className="font-bold text-slate-800">Tratamiento y Referencia</h3>
+            <h3 className="font-bold text-slate-800">Tratamiento y Actividades</h3>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextAreaField label="Tratamiento Colocado" name="treatmentGiven" value={formData.treatmentGiven} onChange={handleInputChange} placeholder="Tratamiento administrado..." />
             <TextAreaField label="Tratamiento Recetado" name="treatmentPrescribed" value={formData.treatmentPrescribed} onChange={handleInputChange} placeholder="Tratamiento para la casa..." />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
-              <input
-                type="checkbox"
-                id="referredHvsr"
-                checked={formData.referredHvsr}
-                onChange={e => handleInputChange('referredHvsr', e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="referredHvsr" className="text-xs font-bold text-slate-700">Referido al HVSR</label>
+
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Vías de Administración (Tto)</h4>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+              <CheckboxField label="💉 Tto E/V" name="tto_ev" checked={formData.tto_ev} onChange={handleInputChange} />
+              <CheckboxField label="💉 Tto I/M" name="tto_im" checked={formData.tto_im} onChange={handleInputChange} />
+              <CheckboxField label="💉 Tto S/L" name="tto_sl" checked={formData.tto_sl} onChange={handleInputChange} />
+              <CheckboxField label="💉 Tto V/O" name="tto_vo" checked={formData.tto_vo} onChange={handleInputChange} />
+              <CheckboxField label="💉 Tto S/C" name="tto_sc" checked={formData.tto_sc} onChange={handleInputChange} />
+              <CheckboxField label="Tto Protocolo" name="tto_protocolo" checked={formData.tto_protocolo} onChange={handleInputChange} />
             </div>
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl">
-              <input
-                type="checkbox"
-                id="referredSpecialist"
-                checked={formData.referredSpecialist}
-                onChange={e => handleInputChange('referredSpecialist', e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="referredSpecialist" className="text-xs font-bold text-slate-700">Ref. Consulta Espec.</label>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Otras Actividades de Enfermería</h4>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <CheckboxField label="Nebulizaciones" name="nebulizaciones" checked={formData.nebulizaciones} onChange={handleInputChange} />
+              <CheckboxField label="Curas" name="curas" checked={formData.curas} onChange={handleInputChange} />
+              <CheckboxField label="Suturas" name="suturas" checked={formData.suturas} onChange={handleInputChange} />
+              <CheckboxField label="Retiro Puntos" name="retiro_puntos" checked={formData.retiro_puntos} onChange={handleInputChange} />
+              <CheckboxField label="Sondas" name="sondas" checked={formData.sondas} onChange={handleInputChange} />
+              <CheckboxField label="Lavado Ocular" name="lavado_ocular" checked={formData.lavado_ocular} onChange={handleInputChange} />
+              <CheckboxField label="Lavado Nasal" name="lavado_nasal" checked={formData.lavado_nasal} onChange={handleInputChange} />
+              <CheckboxField label="Lavado Oídos" name="lavado_oidos" checked={formData.lavado_oidos} onChange={handleInputChange} />
+              <CheckboxField label="Electros" name="electros" checked={formData.electros} onChange={handleInputChange} />
+              <CheckboxField label="Visitas Dom." name="visitas_domiciliares" checked={formData.visitas_domiciliares} onChange={handleInputChange} />
+              <CheckboxField label="Jornadas Esp." name="jornadas_especiales" checked={formData.jornadas_especiales} onChange={handleInputChange} />
+              <CheckboxField label="Entrega Ayudas" name="entregas_ayudas" checked={formData.entregas_ayudas} onChange={handleInputChange} />
+              <CheckboxField label="💉 Vacunas Rut." name="vacunas_rutinas" checked={formData.vacunas_rutinas} onChange={handleInputChange} />
             </div>
-            <InputField label="Hora Salida" name="exitTime" type="time" value={formData.exitTime} onChange={handleInputChange} />
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Referencias y Salida</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <CheckboxField label="Referido al HVSR" name="referredHvsr" checked={formData.referredHvsr} onChange={handleInputChange} />
+                <CheckboxField label="Ref. Consulta Espec." name="referredSpecialist" checked={formData.referredSpecialist} onChange={handleInputChange} />
+              </div>
+              <div className="space-y-2">
+                <CheckboxField label="Ref. Ambulancia" name="referencia_ambulancia" checked={formData.referencia_ambulancia} onChange={handleInputChange} />
+                <CheckboxField label="Ref. Propios Medios" name="referencia_propios_medios" checked={formData.referencia_propios_medios} onChange={handleInputChange} />
+              </div>
+              <InputField label="Hora Salida" name="exitTime" type="time" value={formData.exitTime} onChange={handleInputChange} />
+            </div>
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-4 rounded-3xl font-black text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
-        >
-          <Plus className="w-5 h-5" />
-          REGISTRAR PACIENTE
-        </button>
+        <div className="flex gap-4">
+          {editingPatient && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-3xl font-black text-sm hover:bg-slate-200 transition-all uppercase tracking-widest"
+            >
+              CANCELAR
+            </button>
+          )}
+          <button
+            type="submit"
+            className="flex-[2] bg-blue-600 text-white py-4 rounded-3xl font-black text-sm shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+          >
+            {editingPatient ? <Save className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            {editingPatient ? 'GUARDAR CAMBIOS' : 'REGISTRAR PACIENTE'}
+          </button>
+        </div>
       </form>
     </div>
   );
