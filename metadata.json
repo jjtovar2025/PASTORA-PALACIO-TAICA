@@ -1,5 +1,5 @@
 {
-  "name": "Centro + Salud - Gestión de Morbilidad",
-  "description": "Sistema de extracción de datos de reportes de WhatsApp para el Centro + Salud 'Pastora Palacios Taica', con integración a Google Sheets y Supabase.",
+  "name": "Morbilidad Diaria PWA",
+  "description": "Sistema de registro de morbilidad diaria para consultorios populares. Funciona offline con sincronización automática a Supabase.",
   "requestFramePermissions": []
 }

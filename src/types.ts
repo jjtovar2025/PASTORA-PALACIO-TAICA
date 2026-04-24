@@ -1,6 +1,6 @@
 export interface Paciente {
   id?: number;
-  cedula: string;
+  cedula_representante: string;
   nombres: string;
   apellidos: string;
   fecha_nacimiento: string;
@@ -8,7 +8,10 @@ export interface Paciente {
   direccion: string;
   parroquia: string;
   telefono: string;
-  telefono_acompanante: string;
+  es_menor: boolean;
+  nombre_menor?: string;
+  fecha_nacimiento_menor?: string;
+  sexo_menor?: 'M' | 'F';
 }
 
 export interface Consulta {
@@ -18,13 +21,13 @@ export interface Consulta {
   hora_ingreso: string;
   medico_guardia: string;
   enfermera_guardia: string;
-  peso: number;
-  talla: number;
-  fc: number;
-  spo2: number;
-  temp_c: number;
-  pa_sistolica: number;
-  pa_diastolica: number;
+  peso: number | null;
+  talla: number | null;
+  fc: number | null;
+  spo2: number | null;
+  temp_c: number | null;
+  pa_sistolica: number | null;
+  pa_diastolica: number | null;
   motivo_consulta: string;
   especialidad: string;
   diagnostico: string;
@@ -35,6 +38,11 @@ export interface Consulta {
   centro_nombre: string;
   centro_asic: string;
   centro_parroquia: string;
+  es_menor: boolean;
+  nombre_menor: string;
+  tipo_actividad: string[]; // ['control_ta', 'tto_im', etc]
+  grupo_etario: string;
+  programa_salud: string[]; // ['cardiovascular', 'diabetes']
   estado_sincronizacion: 'pendiente' | 'sincronizado' | 'error';
 }
 
@@ -45,4 +53,11 @@ export interface Configuracion {
   parroquia: string;
   medico_guardia_default: string;
   enfermera_guardia_default: string;
+}
+
+export type UserRole = 'enfermeria' | 'medico';
+
+export interface AuthContext {
+  role: UserRole;
+  userName: string;
 }

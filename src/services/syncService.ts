@@ -11,12 +11,12 @@ export async function sincronizarPendientes() {
   if (!supabase) return { success: false, message: 'Supabase no configurado' };
 
   try {
-    // 1. Sincronizar pacientes primero (importante para FK si las hay en backend)
+    // 1. Sincronizar pacientes primero
     const pacientes = await db.pacientes.toArray();
     if (pacientes.length > 0) {
-      const { error: pError } = await supabase.from('pacientes').upsert(
+      const { error: pError } = await supabase.from('morbilidad_pacientes').upsert(
         pacientes.map(p => ({
-          cedula: p.cedula,
+          cedula_representante: p.cedula_representante,
           nombres: p.nombres,
           apellidos: p.apellidos,
           fecha_nacimiento: p.fecha_nacimiento,
@@ -24,27 +24,35 @@ export async function sincronizarPendientes() {
           direccion: p.direccion,
           parroquia: p.parroquia,
           telefono: p.telefono,
-          telefono_acompanante: p.telefono_acompanante
+          es_menor: p.es_menor,
+          nombre_menor: p.nombre_menor,
+          fecha_nacimiento_menor: p.fecha_nacimiento_menor,
+          sexo_menor: p.sexo_menor
         })),
-        { onConflict: 'cedula' }
+        { onConflict: 'cedula_representante' }
       );
       if (pError) throw pError;
     }
 
     // 2. Sincronizar consultas pendientes
     const pendientes = await db.consultas.where('estado_sincronizacion').equals('pendiente').toArray();
-    
     if (pendientes.length === 0) return { success: true, message: 'Nada que sincronizar' };
 
+    // Obtener mapeo de cedulas -> IDs remotos para asegurar FKs
+    const { data: remotePacientes } = await supabase.from('morbilidad_pacientes').select('id, cedula_representante');
+    const remoteIdMap = new Map(remotePacientes?.map(p => [p.cedula_representante, p.id]) || []);
+
     for (const consulta of pendientes) {
-      // Necesitamos la cedula del paciente para el backend (mejor que ID autoincremental local)
       const paciente = await db.pacientes.get(consulta.paciente_id);
       if (!paciente) continue;
 
-      const { error: cError } = await supabase.from('morbilidad').insert([{
+      const remotePacienteId = remoteIdMap.get(paciente.cedula_representante);
+      if (!remotePacienteId) continue;
+
+      const { error: cError } = await supabase.from('morbilidad_consultas').insert([{
         ...consulta,
-        cedula_paciente: paciente.cedula, // Campo extra para relacionar en Supabase
-        id: undefined // Dejar que Supabase genere el ID o usar UUID
+        paciente_id: remotePacienteId,
+        id: undefined 
       }]);
 
       if (!cError) {

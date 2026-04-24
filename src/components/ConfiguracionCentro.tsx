@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../db';
 import { Configuracion } from '../types';
-import { Settings, Save, Trash2, Building, User, Activity, AlertTriangle } from 'lucide-react';
+import { Settings, Save, Building, User } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const ConfiguracionCentro: React.FC = () => {
@@ -20,23 +20,6 @@ export const ConfiguracionCentro: React.FC = () => {
     if (!config) return;
     await db.configuracion.put(config);
     alert('Configuración guardada exitosamente');
-  };
-
-  const limpiarBaseDatos = async () => {
-    if (!confirm('¿Está seguro de que desea limpiar los reportes antiguos? Solo se borrarán las consultas ya sincronizadas con más de 30 días de antigüedad. La ficha del paciente no se borrará.')) {
-      return;
-    }
-
-    const unMesAtras = new Date();
-    unMesAtras.setDate(unMesAtras.getDate() - 30);
-    const fechaLimite = unMesAtras.toISOString().split('T')[0];
-
-    const count = await db.consultas
-      .where('estado_sincronizacion').equals('sincronizado')
-      .and(c => c.fecha < fechaLimite)
-      .delete();
-
-    alert(`Se han eliminado ${count} consultas antiguas.`);
   };
 
   if (loading || !config) return <div>Cargando...</div>;
@@ -124,23 +107,6 @@ export const ConfiguracionCentro: React.FC = () => {
             <Save className="w-6 h-6" /> Guardar Todos los Cambios
           </button>
         </form>
-      </div>
-
-      <div className="bg-red-50 p-8 rounded-3xl border border-red-100 space-y-6">
-        <div className="flex items-center gap-3 text-red-600">
-          <AlertTriangle className="w-8 h-8" />
-          <h3 className="text-xl font-black">Zona de Mantenimiento</h3>
-        </div>
-        <p className="text-red-700 font-medium">
-          Limpiar la base de datos local ayuda a que la aplicación funcione más rápido en dispositivos antiguos. 
-          Solo se borrarán las consultas antiguas pero el historial global se guarda en Supabase.
-        </p>
-        <button 
-          onClick={limpiarBaseDatos}
-          className="bg-white text-red-600 px-8 py-4 rounded-2xl font-black text-lg border-2 border-red-100 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all flex items-center gap-2"
-        >
-          <Trash2 className="w-5 h-5" /> LIMPIAR CONSULTAS ANTIGUAS (&gt;30 DÍAS)
-        </button>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ export const FichaPaciente: React.FC = () => {
   const buscar = async () => {
     if (!cedula) return;
     setLoading(true);
-    const p = await db.pacientes.where('cedula').equals(cedula).first();
+    const p = await db.pacientes.where('cedula_representante').equals(cedula).first();
     if (p) {
       setPaciente(p);
       const h = await db.consultas.where('paciente_id').equals(p.id!).reverse().toArray();
@@ -63,14 +63,14 @@ export const FichaPaciente: React.FC = () => {
                   <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md">
                     <User className="w-12 h-12 text-blue-600" />
                   </div>
-                  <h4 className="text-2xl font-black text-slate-800">{paciente.nombres}</h4>
-                  <h4 className="text-xl font-black text-slate-400">{paciente.apellidos}</h4>
+                  <h4 className="text-2xl font-black text-slate-800">{paciente.es_menor ? paciente.nombre_menor : paciente.nombres}</h4>
+                  <h4 className="text-xl font-black text-slate-400">{paciente.es_menor ? '(MENOR)' : paciente.apellidos}</h4>
                 </div>
                 
                 <div className="space-y-4 pt-6 border-t border-slate-50">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase">Cédula</span>
-                    <span className="font-black text-slate-700">{paciente.cedula}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase">C.I. Rep</span>
+                    <span className="font-black text-slate-700">{paciente.cedula_representante}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black text-slate-400 uppercase">Nacimiento</span>
