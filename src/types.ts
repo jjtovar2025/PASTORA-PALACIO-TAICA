@@ -46,6 +46,22 @@ export interface Consulta {
   estado_sincronizacion: 'pendiente' | 'sincronizado' | 'error';
 }
 
+export interface PersonalCentro {
+  id?: number;
+  cedula: string;
+  nombres: string;
+  apellidos: string;
+  rol: UserRole;
+  cargo: 'Enfermero/a' | 'Médico/a' | 'Ambos';
+  telefono: string;
+  correo: string;
+  id_centro: string;
+  nombre_centro: string;
+  asic: string;
+  pin: string;
+  activo: boolean;
+}
+
 export interface Configuracion {
   id: number;
   nombre_centro: string;
@@ -53,6 +69,7 @@ export interface Configuracion {
   parroquia: string;
   medico_guardia_default: string;
   enfermera_guardia_default: string;
+  centros_disponibles?: Array<{ id: string, nombre: string, asic: string }>;
 }
 
 export type UserRole = 'enfermeria' | 'medico';
@@ -60,4 +77,7 @@ export type UserRole = 'enfermeria' | 'medico';
 export interface AuthContext {
   role: UserRole;
   userName: string;
+  cedula: string;
+  centro?: string;
+  personalId?: number;
 }

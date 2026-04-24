@@ -7,10 +7,47 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+export async function sincronizarPersonal() {
+  if (!supabase) return { success: false, message: 'Supabase no configurado' };
+
+  try {
+    // 1. Descargar personal desde Supabase
+    const { data: remotePersonal, error: fetchError } = await supabase
+      .from('personal_centro')
+      .select('*');
+    
+    if (fetchError) throw fetchError;
+
+    if (remotePersonal && remotePersonal.length > 0) {
+      // Actualizar IndexedDB con los datos remotos
+      for (const p of remotePersonal) {
+        await db.personal_centro.put(p);
+      }
+    }
+
+    // 2. Subir personal local que no esté en Supabase (o actualizar)
+    const localPersonal = await db.personal_centro.toArray();
+    if (localPersonal.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('personal_centro')
+        .upsert(localPersonal.map(p => ({ ...p, id: undefined })), { onConflict: 'cedula' });
+      
+      if (upsertError) throw upsertError;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sincronizando personal:', error);
+    return { success: false, error };
+  }
+}
 export async function sincronizarPendientes() {
   if (!supabase) return { success: false, message: 'Supabase no configurado' };
 
   try {
+    // Sincronizar personal primero
+    await sincronizarPersonal();
+
     // 1. Sincronizar pacientes primero
     const pacientes = await db.pacientes.toArray();
     if (pacientes.length > 0) {
