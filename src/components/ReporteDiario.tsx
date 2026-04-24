@@ -98,7 +98,6 @@ export const ReporteDiario: React.FC<Props> = ({ auth }) => {
   const { stats, config } = reportData;
 
   const reporteEnfermeria = `⚕️ Morbilidad diaria
-*Centro + Salud. ${config?.nombre_centro || ''} *
 *Fecha:*${hoy}*
 *Día: *${diaSemana}*
 

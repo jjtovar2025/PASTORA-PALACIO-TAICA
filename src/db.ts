@@ -28,9 +28,9 @@ export async function initDB() {
   if (!config) {
     await db.configuracion.put({
       id: 1,
-      nombre_centro: 'CPT 2 Padre Hilario Cabrera',
-      asic: 'Paracotos',
-      parroquia: 'Paracotos',
+      nombre_centro: '',
+      asic: '',
+      parroquia: '',
       medico_guardia_default: '',
       enfermera_guardia_default: '',
       centros_disponibles: [

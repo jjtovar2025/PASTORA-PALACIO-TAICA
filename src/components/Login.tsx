@@ -243,9 +243,9 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Centro de Salud</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-3">Centro de Salud (Opcional)</label>
                   <select 
-                    required value={formData.id_centro} onChange={e => setFormData({...formData, id_centro: e.target.value})}
+                    value={formData.id_centro} onChange={e => setFormData({...formData, id_centro: e.target.value})}
                     className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] font-bold text-xs uppercase outline-none focus:border-blue-500"
                   >
                     <option value="">Seleccione Centro...</option>

@@ -80,6 +80,12 @@ export const FichaPaciente: React.FC = () => {
                     <span className="text-[10px] font-black text-slate-400 uppercase">Sexo</span>
                     <span className="font-black text-slate-700">{paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</span>
                   </div>
+                  {paciente.telefono && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase">Teléfono</span>
+                      <span className="font-black text-slate-700">{paciente.telefono}</span>
+                    </div>
+                  )}
                   <div className="pt-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase">Dirección</span>
                     <p className="font-bold text-slate-600 text-sm mt-1">{paciente.direccion}</p>

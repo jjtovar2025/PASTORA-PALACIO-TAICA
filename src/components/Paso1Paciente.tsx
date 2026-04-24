@@ -126,6 +126,12 @@ export const Paso1Paciente: React.FC<Props> = ({ onNext }) => {
                   <p>C.I. Rep: {pacienteEncontrado.cedula_representante}</p>
                   <span className="w-1 h-1 bg-slate-300 rounded-full" />
                   <p className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {calcularEdad(pacienteEncontrado.fecha_nacimiento)}</p>
+                  {pacienteEncontrado.telefono && (
+                    <>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                      <p>Tel: {pacienteEncontrado.telefono}</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -213,6 +219,14 @@ export const Paso1Paciente: React.FC<Props> = ({ onNext }) => {
                   HOMBRE
                 </button>
               </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase ml-2 tracking-widest">Teléfono de Contacto</label>
+              <input 
+                type="text" placeholder="Ej: 0412-0000000" value={nuevoPaciente.telefono || ''} 
+                onChange={(e) => setNuevoPaciente({...nuevoPaciente, telefono: e.target.value})}
+                className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold focus:border-blue-500 focus:bg-white outline-none transition-all"
+              />
             </div>
             <div className="md:col-span-2 space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase ml-2 tracking-widest">Dirección Detallada</label>
